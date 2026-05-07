@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Work Sans', sans-serif;
+  --font-data: 'Inter', sans-serif;
+
+  --color-mos: #610000;
+  --color-surface-0: #ffffff;
+  --color-surface-1: #f7f7f7;
+  --color-surface-2: #f0f0f0;
+  --color-surface-3: #e8e8e8;
+
+  --shadow-card: 0 2px 12px rgba(26, 28, 29, 0.04);
+  --shadow-modal: 0 8px 32px rgba(26, 28, 29, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-surface-1);
+  color: #1a1c1d;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-mos-700 text-white font-body font-medium px-4 py-2 rounded-lg
+           transition-transform duration-[120ms] ease-out
+           hover:scale-[1.05] active:scale-[0.93]
+           focus:outline-none focus:ring-2 focus:ring-mos-700 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-0 text-text-primary font-body font-medium px-4 py-2 rounded-lg
+           border border-surface-3
+           transition-transform duration-[120ms] ease-out
+           hover:scale-[1.05] active:scale-[0.93]
+           focus:outline-none focus:ring-2 focus:ring-surface-3 focus:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-surface-0 rounded-xl shadow-card;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary
+           font-body font-medium text-sm cursor-pointer
+           transition-all duration-200 ease-out
+           hover:bg-surface-2 hover:text-text-primary;
+  }
+
+  .nav-item-active {
+    @apply bg-mos-50 text-mos-700 border-l-2 border-mos-700;
+  }
+
+  .skeleton {
+    @apply bg-surface-3 rounded animate-skeleton;
+  }
+
+  .badge-saudavel {
+    @apply text-status-success bg-status-successLight text-xs font-body font-semibold px-2 py-0.5 rounded-xs;
+  }
+
+  .badge-alerta {
+    @apply text-status-warning bg-status-warningLight text-xs font-body font-semibold px-2 py-0.5 rounded-xs;
+  }
+
+  .badge-erro {
+    @apply text-status-error bg-status-errorLight text-xs font-body font-semibold px-2 py-0.5 rounded-xs;
+  }
+
+  .page-enter {
+    animation: fade-in 150ms ease-out;
+  }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); }
+  .font-body    { font-family: var(--font-body); }
+  .font-data    { font-family: var(--font-data); }
+}
