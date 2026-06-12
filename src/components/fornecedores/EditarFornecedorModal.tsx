@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase';
 import type { Fornecedor } from '../../lib/database.types';
 import { CATEGORIAS_FORNECEDOR, ESTADOS_BR } from './fornecedorConstants';
 
-interface NovoFornecedorModalProps {
+interface EditarFornecedorModalProps {
+  fornecedor: Fornecedor;
   onClose: () => void;
   onSaved: (item: Fornecedor) => void;
 }
@@ -21,22 +22,20 @@ interface FormState {
   status: 'ativo' | 'inativo';
 }
 
-const INITIAL: FormState = {
-  nome: '',
-  categoria: 'Materiais de Construção',
-  contato: '',
-  email: '',
-  telefone: '',
-  cnpj: '',
-  cidade: '',
-  estado: '',
-  status: 'ativo',
-};
-
 const inputClass = 'w-full rounded-md border border-surface-3 px-3 py-2 font-data text-sm text-text-primary focus:outline-none focus:border-mos-700 transition-colors bg-white';
 
-export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalProps) {
-  const [form, setForm] = useState<FormState>(INITIAL);
+export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFornecedorModalProps) {
+  const [form, setForm] = useState<FormState>({
+    nome: fornecedor.nome,
+    categoria: fornecedor.categoria,
+    contato: fornecedor.contato,
+    email: fornecedor.email,
+    telefone: fornecedor.telefone,
+    cnpj: fornecedor.cnpj,
+    cidade: fornecedor.cidade ?? '',
+    estado: fornecedor.estado ?? '',
+    status: fornecedor.status as 'ativo' | 'inativo',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +64,8 @@ export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalPro
 
     const { data, error: err } = await supabase
       .from('fornecedores')
-      .insert(payload)
+      .update(payload)
+      .eq('id', fornecedor.id)
       .select()
       .single();
 
@@ -85,8 +85,8 @@ export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalPro
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-2">
           <div>
-            <h2 className="font-display font-bold text-base text-text-primary">Novo Fornecedor</h2>
-            <p className="font-body text-xs text-text-tertiary mt-0.5">Preencha os dados e clique em Salvar.</p>
+            <h2 className="font-display font-bold text-base text-text-primary">Editar Fornecedor</h2>
+            <p className="font-body text-xs text-text-tertiary mt-0.5">Altere os dados e clique em Salvar.</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface-1 transition-colors">
             <X className="w-4 h-4 text-text-tertiary" />
@@ -96,12 +96,7 @@ export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalPro
         <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
           <div>
             <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Nome *</label>
-            <input
-              className={inputClass}
-              placeholder="Ex: Construtora Silva Ltda"
-              value={form.nome}
-              onChange={e => set('nome', e.target.value)}
-            />
+            <input className={inputClass} placeholder="Ex: Construtora Silva Ltda" value={form.nome} onChange={e => set('nome', e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -122,12 +117,7 @@ export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalPro
 
           <div>
             <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Nome do Contato *</label>
-            <input
-              className={inputClass}
-              placeholder="Ex: João da Silva"
-              value={form.contato}
-              onChange={e => set('contato', e.target.value)}
-            />
+            <input className={inputClass} placeholder="Ex: João da Silva" value={form.contato} onChange={e => set('contato', e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -177,7 +167,7 @@ export function NovoFornecedorModal({ onClose, onSaved }: NovoFornecedorModalPro
             className="flex items-center gap-2 px-5 py-2 rounded-md bg-mos-700 text-white font-body text-sm font-medium hover:bg-mos-800 transition-colors disabled:opacity-60"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saving ? 'Salvando…' : 'Salvar Fornecedor'}
+            {saving ? 'Salvando…' : 'Salvar Alterações'}
           </button>
         </div>
       </div>

@@ -55,8 +55,10 @@ export default function Dashboard() {
     setFilters(prev => ({ ...prev, dataInicio: null, dataFim: null }));
   }
 
-  const { obras } = useObras();
+  const { obras: todasObras } = useObras();
   const { fluxoData, kpis, loading } = useDashboardData(filters);
+
+  const obras = useMemo(() => todasObras.filter(o => !o.arquivada), [todasObras]);
 
   const obraAtual = filters.obraId ? obras.find(o => o.id === filters.obraId) ?? null : null;
 

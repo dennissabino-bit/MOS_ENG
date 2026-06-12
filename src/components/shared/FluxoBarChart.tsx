@@ -151,7 +151,7 @@ export function FluxoBarChart({
                     <div
                       key={i}
                       className="flex flex-col items-center cursor-pointer group"
-                      style={!showPeriodFilter ? { flex: 1, minWidth: `${groupWidth}px` } : { width: `${groupWidth}px` }}
+                      style={{ flex: 1, minWidth: `${groupWidth}px` }}
                       onMouseEnter={e => handleMouseEnter(e, item)}
                       onMouseMove={handleMouseMove}
                       onMouseLeave={() => setTooltip(null)}
@@ -189,7 +189,7 @@ export function FluxoBarChart({
 
               <div className="flex pt-2">
                 {filtered.map((item, i) => (
-                  <div key={i} style={!showPeriodFilter ? { flex: 1, minWidth: `${groupWidth}px` } : { width: `${groupWidth}px` }} className="flex justify-center">
+                  <div key={i} style={{ flex: 1, minWidth: `${groupWidth}px` }} className="flex justify-center">
                     <span className="font-data text-[10px] text-text-tertiary">
                       {formatMonthYear(item.mes, item.ano)}
                     </span>

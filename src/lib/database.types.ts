@@ -12,6 +12,7 @@ export interface Obra {
   nome: string;
   codigo: string;
   status: ObraStatus;
+  arquivada: boolean;
   bandeira: string;
   tipo: string;
   localizacao: string;
@@ -36,6 +37,8 @@ export interface Fornecedor {
   email: string;
   cnpj: string;
   telefone: string;
+  cidade?: string;
+  estado?: string;
   created_at: string;
 }
 
@@ -146,6 +149,39 @@ export interface DiarioObra {
   titulo: string;
   descricao: string;
   etapa_tag?: string;
+  created_at: string;
+}
+
+export type CotacaoGrupoStatus = 'aberta' | 'fechada';
+
+export interface CotacaoGrupo {
+  id: string;
+  titulo: string;
+  obra_id: string | null;
+  categoria: string | null;
+  status: CotacaoGrupoStatus;
+  fornecedor_vencedor_id: string | null;
+  created_at: string;
+  obras?: Pick<Obra, 'nome' | 'codigo'>;
+  fornecedores?: Pick<Fornecedor, 'nome'>;
+}
+
+export interface CotacaoItem {
+  id: string;
+  grupo_id: string;
+  descricao: string;
+  unidade: string;
+  quantidade: number;
+  ordem: number;
+  created_at: string;
+}
+
+export interface CotacaoProposta {
+  id: string;
+  grupo_id: string;
+  fornecedor_id: string;
+  item_id: string;
+  preco_unitario: number | null;
   created_at: string;
 }
 

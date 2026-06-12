@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, CheckCircle2, Clock, XCircle, Minus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, CheckCircle2, Clock, XCircle, Minus, Pencil, Trash2, Receipt } from 'lucide-react';
 import type { Medicao } from '../../../lib/database.types';
 import { formatCurrencyFull, formatCurrency, formatCurrencyMi } from '../../../lib/formatters';
 import { NovaMedicaoModal } from '../NovaMedicaoModal';
@@ -16,10 +16,11 @@ const CAT_LABELS: Record<CatGroup, string> = {
 };
 
 function computeValorTotal(m: Medicao): number {
+  if (m.qtd_medida != null && m.qtd_medida > 0) {
+    return m.qtd_medida * (m.valor_unitario || 0);
+  }
   if (m.valor_total != null && m.valor_total > 0) return m.valor_total;
-  const qty = m.qtd_medida != null && m.qtd_medida > 0 ? m.qtd_medida : (m.qtd_orcada || 0);
-  const unit = m.valor_unitario || 0;
-  return qty * unit;
+  return (m.qtd_orcada || 0) * (m.valor_unitario || 0);
 }
 
 function StatusIcon({ status }: { status: string }) {
@@ -56,17 +57,16 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
     onMedicoesChange(prev => [...prev, item]);
   }
 
-  const { totalGeral, totalMedido, totalAprovado, totalPendente, totalReprovado } = useMemo(() => {
-    let geral = 0, medido = 0, aprovado = 0, pendente = 0, reprovado = 0;
+  const { totalMedido, totalAprovado, totalPendente, totalReprovado } = useMemo(() => {
+    let medido = 0, aprovado = 0, pendente = 0, reprovado = 0;
     for (const m of medicoes) {
       const v = computeValorTotal(m);
-      geral += v;
       medido += v;
       if (m.status === 'aprovada') aprovado += v;
       else if (m.status === 'pendente') pendente += v;
       else if (m.status === 'reprovada') reprovado += v;
     }
-    return { totalGeral: geral, totalMedido: medido, totalAprovado: aprovado, totalPendente: pendente, totalReprovado: reprovado };
+    return { totalMedido: medido, totalAprovado: aprovado, totalPendente: pendente, totalReprovado: reprovado };
   }, [medicoes]);
 
   const totalAMedir = obraOrcado - totalMedido;
@@ -80,11 +80,6 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
     if (search && !m.descricao.toLowerCase().includes(search.toLowerCase()) && !m.codigo.includes(search)) return false;
     return true;
   }), [medicoes, search]);
-
-  const totalFiltrado = useMemo(
-    () => filteredMeds.reduce((s, m) => s + computeValorTotal(m), 0),
-    [filteredMeds]
-  );
 
   const cats: CatGroup[] = ['infraestrutura', 'superestrutura', 'instalacoes', 'acabamentos', 'extra', 'outros'];
 
@@ -103,20 +98,17 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
 
   const fornecedores = [...new Set(medicoes.map(m => m.fornecedor_nome).filter(Boolean))];
 
-  const catAprovado = (cat: CatGroup) => {
+  const catTotal = (cat: CatGroup) => {
     const list = medicoesByCat.get(cat) || [];
-    return list.filter(m => m.status === 'aprovada').reduce((s, m) => s + computeValorTotal(m), 0);
+    return list.reduce((s, m) => s + computeValorTotal(m), 0);
   };
-
-  const hasFilter = search.length > 0;
 
   return (
     <div className="p-6 space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            icon: '📋',
-            iconEl: <div className="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center"><span className="font-data text-sm font-bold text-text-secondary">18</span></div>,
+            iconEl: <div className="w-9 h-9 rounded-lg bg-mos-700 flex items-center justify-center"><Receipt className="w-5 h-5 text-white" /></div>,
             label: 'Total Medido',
             value: formatCurrencyMi(totalMedido),
             sub: `${medicoes.length} medições registradas`,
@@ -132,21 +124,21 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
           {
             iconEl: <div className="w-9 h-9 rounded-lg bg-status-warningLight flex items-center justify-center"><Clock className="w-5 h-5 text-status-warning" /></div>,
             label: 'Aguardando Aprovação',
-            value: formatCurrency(totalPendente),
+            value: formatCurrencyMi(totalPendente),
             sub: `${medicoes.filter(m => m.status === 'pendente').length} medições pendentes`,
             color: 'text-status-warning',
           },
           {
             iconEl: <div className="w-9 h-9 rounded-lg bg-status-errorLight flex items-center justify-center"><XCircle className="w-5 h-5 text-status-error" /></div>,
             label: 'Reprovadas',
-            value: formatCurrency(totalReprovado),
+            value: formatCurrencyMi(totalReprovado),
             sub: `${medicoes.filter(m => m.status === 'reprovada').length} medições reprovadas`,
             color: 'text-status-error',
           },
         ].map((k, i) => (
           <div key={i} className="card p-4">
             <div className="mb-3">{k.iconEl}</div>
-            <p className={`font-display font-bold text-lg ${k.color} mb-0.5`}>{k.value}</p>
+            <p className={`font-display font-bold text-xl ${k.color} mb-0.5`}>{k.value}</p>
             <p className="font-body text-xs font-semibold text-text-secondary mb-1">{k.label}</p>
             <p className="font-body text-xs text-text-tertiary">{k.sub}</p>
           </div>
@@ -154,14 +146,19 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
       </div>
 
       <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-start justify-between mb-3">
           <div>
             <h3 className="font-display font-semibold text-sm text-text-primary">Avanço Financeiro — Medido vs. Orçado</h3>
             <p className="font-body text-xs text-text-tertiary mt-0.5">Apenas medições <span className="font-semibold text-text-primary">Aprovadas</span> entram no Realizado</p>
           </div>
-          <span className="font-data font-bold text-2xl text-text-primary">
-            {Math.round(aprovPercent)}%
-          </span>
+          <div className="text-right">
+            <span className="font-data font-bold text-2xl text-mos-700 block">
+              {aprovPercent.toFixed(1)}%
+            </span>
+            <span className="font-body text-xs text-text-tertiary">
+              {formatCurrencyMi(totalAprovado)} de {formatCurrencyMi(obraOrcado)}
+            </span>
+          </div>
         </div>
         <div className="w-full h-3 bg-surface-2 rounded-full overflow-hidden flex mb-2">
           <div className="h-full bg-status-success rounded-l-full transition-all" style={{ width: `${aprovPercent}%` }} />
@@ -260,15 +257,15 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
               {cats.map((cat) => {
                 const rows = medicoesByCat.get(cat) || [];
                 if (rows.length === 0) return null;
-                const catAprov = catAprovado(cat);
+                const catSum = catTotal(cat);
                 return (
                   <>
                     <tr key={`h-${cat}`} className="bg-surface-1 border-b border-surface-2">
                       <td colSpan={8} className="py-2 px-4">
-                        <span className="font-body text-xs font-bold text-text-tertiary tracking-widest">{CAT_LABELS[cat]}</span>
+                        <span className="font-body text-xs font-bold text-mos-700 tracking-widest">{CAT_LABELS[cat]}</span>
                       </td>
                       <td colSpan={2} className="py-2 px-3 text-right">
-                        <span className="font-body text-xs font-semibold text-status-success">Aprovado: {formatCurrency(catAprov)}</span>
+                        <span className="font-body text-xs font-semibold text-text-secondary">Total: {formatCurrencyMi(catSum)}</span>
                       </td>
                     </tr>
                     {rows.map((m) => {
@@ -334,28 +331,15 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
                 );
               })}
               {medicoes.length > 0 && (
-                <>
-                  {hasFilter && (
-                    <tr className="border-t border-surface-2 bg-surface-1">
-                      <td colSpan={7} className="py-2.5 px-4">
-                        <span className="font-body text-xs font-semibold text-text-tertiary tracking-wider">TOTAL FILTRADO ({filteredMeds.length} {filteredMeds.length === 1 ? 'item' : 'itens'})</span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <span className="font-data font-semibold text-sm text-text-secondary">{formatCurrencyFull(totalFiltrado)}</span>
-                      </td>
-                      <td colSpan={2} />
-                    </tr>
-                  )}
-                  <tr className="border-t-2 border-surface-3 bg-surface-1">
-                    <td colSpan={7} className="py-3 px-4">
-                      <span className="font-display font-bold text-sm text-text-primary">TOTAL GERAL ({medicoes.length} {medicoes.length === 1 ? 'item' : 'itens'})</span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="font-data font-bold text-base text-text-primary">{formatCurrencyFull(totalGeral)}</span>
-                    </td>
-                    <td colSpan={2} />
-                  </tr>
-                </>
+                <tr className="border-t-2 border-surface-3 bg-surface-1">
+                  <td colSpan={7} className="py-3 px-4">
+                    <span className="font-display font-bold text-sm text-text-primary">TOTAL MEDIÇÕES</span>
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <span className="font-data font-bold text-base text-mos-700">{formatCurrencyMi(totalMedido)}</span>
+                  </td>
+                  <td colSpan={2} />
+                </tr>
               )}
             </tbody>
           </table>

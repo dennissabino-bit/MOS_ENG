@@ -8,6 +8,7 @@ import Salas from './pages/Salas';
 import SalaDetalhe from './pages/SalaDetalhe';
 import Medicoes from './pages/Medicoes';
 import Usuarios from './pages/Usuarios';
+import Relatorios from './pages/Relatorios';
 
 function ProtectedRoute({ children, adminOnly }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, loading, isAdmin } = useEnergiaAuth();
@@ -28,6 +29,7 @@ function EnergiaRoutes() {
       <Route path="/salas" element={<ProtectedRoute><Salas /></ProtectedRoute>} />
       <Route path="/salas/:id" element={<ProtectedRoute><SalaDetalhe /></ProtectedRoute>} />
       <Route path="/medicoes" element={<ProtectedRoute><Medicoes /></ProtectedRoute>} />
+      <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
       <Route path="/usuarios" element={<ProtectedRoute adminOnly><Usuarios /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/energia/dashboard" replace />} />
     </Routes>

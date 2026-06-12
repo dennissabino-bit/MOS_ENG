@@ -6,9 +6,10 @@ import { formatDate } from '../../lib/formatters';
 
 interface ObraHeaderProps {
   obra: Obra;
+  onArchive?: () => void;
 }
 
-export function ObraHeader({ obra }: ObraHeaderProps) {
+export function ObraHeader({ obra, onArchive }: ObraHeaderProps) {
   return (
     <div className="px-6 pt-5 pb-0 bg-surface-0 border-b border-surface-3">
       <div className="flex items-center gap-1.5 mb-3 font-body text-sm text-text-tertiary">
@@ -32,7 +33,9 @@ export function ObraHeader({ obra }: ObraHeaderProps) {
             <FileDown className="w-3.5 h-3.5" />
             Exportar PDF
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-status-errorLight bg-status-errorLight font-body text-sm text-status-error hover:bg-red-100 transition-colors">
+          <button
+            onClick={onArchive}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-status-errorLight bg-status-errorLight font-body text-sm text-status-error hover:bg-red-100 transition-colors">
             <Archive className="w-3.5 h-3.5" />
             Arquivar Obra
           </button>

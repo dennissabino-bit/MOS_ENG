@@ -23,27 +23,25 @@ const ITEMS_PER_PAGE = 6;
 
 export default function Obras() {
   const navigate = useNavigate();
-  const { obras, loading, updateObraImagem, addObra } = useObras();
-  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
+  const { obras, loading, updateObraImagem, addObra, arquivarObra, desarquivarObra } = useObras();
   const [activeTab, setActiveTab] = useState<TabKey>('todas');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showNovoModal, setShowNovoModal] = useState(false);
 
-  const emAndamento = obras.filter(o => o.status === 'em_andamento' && !archivedIds.has(o.id)).length;
-  const concluida   = obras.filter(o => o.status === 'concluida' && !archivedIds.has(o.id)).length;
-  const pausada     = obras.filter(o => o.status === 'pausada' && !archivedIds.has(o.id)).length;
-  const totalExecucao = obras.filter(o => o.status === 'em_andamento' && !archivedIds.has(o.id)).reduce((s, o) => s + o.orcado, 0);
-  const obrasAtivas   = obras.filter(o => (o.status === 'em_andamento' || o.status === 'planejamento') && !archivedIds.has(o.id)).length;
-  const alertas = obras.filter(o => o.realizado > o.orcado && !archivedIds.has(o.id)).length;
-  const archivedCount = archivedIds.size;
+  const emAndamento = obras.filter(o => o.status === 'em_andamento' && !o.arquivada).length;
+  const concluida   = obras.filter(o => o.status === 'concluida' && !o.arquivada).length;
+  const pausada     = obras.filter(o => o.status === 'pausada' && !o.arquivada).length;
+  const totalExecucao = obras.filter(o => o.status === 'em_andamento' && !o.arquivada).reduce((s, o) => s + o.orcado, 0);
+  const obrasAtivas   = obras.filter(o => (o.status === 'em_andamento' || o.status === 'planejamento') && !o.arquivada).length;
+  const alertas = obras.filter(o => o.realizado > o.orcado && !o.arquivada).length;
+  const archivedCount = obras.filter(o => o.arquivada).length;
 
   const filtered = obras.filter(obra => {
-    const isArchived = archivedIds.has(obra.id);
     const matchSearch = !search || obra.nome.toLowerCase().includes(search.toLowerCase()) || obra.codigo.toLowerCase().includes(search.toLowerCase());
 
-    if (activeTab === 'arquivadas') return isArchived && matchSearch;
-    if (isArchived) return false;
+    if (activeTab === 'arquivadas') return obra.arquivada && matchSearch;
+    if (obra.arquivada) return false;
 
     const matchTab = activeTab === 'todas' || obra.status === activeTab;
     return matchTab && matchSearch;
@@ -68,17 +66,12 @@ export default function Obras() {
   }
 
   async function handleArchive(obraId: string) {
-    await new Promise(r => setTimeout(r, 500));
-    setArchivedIds(prev => new Set([...prev, obraId]));
+    await arquivarObra(obraId);
     setPage(1);
   }
 
   async function handleUnarchive(obraId: string) {
-    setArchivedIds(prev => {
-      const next = new Set(prev);
-      next.delete(obraId);
-      return next;
-    });
+    await desarquivarObra(obraId);
     setPage(1);
   }
 
@@ -198,17 +191,15 @@ export default function Obras() {
 
         {paginated.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {paginated.map(obra => {
-              const isArchived = archivedIds.has(obra.id);
-              return (
+            {paginated.map(obra => (
                 <div key={obra.id} className="flex flex-col gap-2">
                   <ObraCard
                     obra={obra}
                     onVerDetalhes={(id) => navigate(`/obras/${id}`)}
                     onThumbnailSaved={handleThumbnailSaved}
-                    onArchive={!isArchived ? handleArchive : undefined}
+                    onArchive={!obra.arquivada ? handleArchive : undefined}
                   />
-                  {isArchived && (
+                  {obra.arquivada && (
                     <button
                       onClick={() => handleUnarchive(obra.id)}
                       className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-status-warning/40 bg-status-warningLight font-body text-xs font-semibold text-status-warning hover:bg-status-warning hover:text-white transition-colors"
@@ -218,8 +209,7 @@ export default function Obras() {
                     </button>
                   )}
                 </div>
-              );
-            })}
+              ))}
           </div>
         ) : (
           <div className="text-center py-20">

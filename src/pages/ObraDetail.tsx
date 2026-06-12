@@ -10,18 +10,21 @@ import { OrcamentoTab } from '../components/obra/tabs/OrcamentoTab';
 import { CronogramaTab } from '../components/obra/tabs/CronogramaTab';
 import { MedicoesTab } from '../components/obra/tabs/MedicoesTab';
 import { DiarioTab } from '../components/obra/tabs/DiarioTab';
-import type { Obra, EtapaEap, Medicao } from '../lib/database.types';
+import type { Obra, EtapaEap, Medicao, DiarioObra } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
 import { useObraData } from '../hooks/useObraData';
-import { mockDiario, mockCotacoes } from '../lib/mockData';
+import { useObras } from '../hooks/useObras';
 
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { arquivarObra } = useObras();
   const [activeTab, setActiveTab] = useState<TabId>('visao-geral');
   const [obra, setObra] = useState<Obra | null>(null);
   const [etapas, setEtapas] = useState<EtapaEap[]>([]);
   const [medicoes, setMedicoes] = useState<Medicao[]>([]);
+  const [diario, setDiario] = useState<DiarioObra[]>([]);
+  const [cotacoesAbertas, setCotacoesAbertas] = useState(0);
   const [loadingObra, setLoadingObra] = useState(true);
   const [loadingEtapas, setLoadingEtapas] = useState(true);
   const [loadingMedicoes, setLoadingMedicoes] = useState(true);
@@ -67,6 +70,26 @@ export default function ObraDetail() {
         setMedicoes(data ?? []);
         setLoadingMedicoes(false);
       });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from('diario_obra')
+      .select('*')
+      .eq('obra_id', id)
+      .order('data', { ascending: false })
+      .then(({ data }) => setDiario(data ?? []));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from('cotacoes')
+      .select('id', { count: 'exact', head: true })
+      .eq('obra_id', id)
+      .eq('status', 'aberta')
+      .then(({ count }) => setCotacoesAbertas(count ?? 0));
   }, [id]);
 
   const obraForHook: Obra = obra ?? {
@@ -116,13 +139,10 @@ export default function ObraDetail() {
     );
   }
 
-  const diario = mockDiario.filter(d => d.obra_id === obra!.id);
-  const cotacoesAbertas = mockCotacoes.filter(c => c.obra_id === obra!.id && c.status === 'aberta').length;
-
   return (
     <AppLayout title={obra!.nome} subtitle={`${obra!.codigo} · ${obra!.localizacao}`}>
       <div className="flex flex-col min-h-full">
-        <ObraHeader obra={obra!} />
+        <ObraHeader obra={obra!} onArchive={async () => { await arquivarObra(obra!.id); navigate('/obras'); }} />
         <ObraTabs activeTab={activeTab} onChange={setActiveTab} />
         <div className="flex-1 bg-surface-1">
           {activeTab === 'visao-geral' && (

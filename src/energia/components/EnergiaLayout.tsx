@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2, DoorOpen, Zap, LogOut, Menu, Plus, Users } from 'lucide-react';
+import { LayoutDashboard, Building2, DoorOpen, Zap, LogOut, Menu, Plus, Users, FileText } from 'lucide-react';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { usePendencias } from '../hooks/usePendencias';
 
@@ -29,6 +29,7 @@ const NAV_SECTIONS = [
     label: 'OPERACIONAL',
     items: [
       { to: '/energia/medicoes', icon: Zap, label: 'Medições', adminOnly: false },
+      { to: '/energia/relatorios', icon: FileText, label: 'Relatórios', adminOnly: false },
     ],
   },
 ];

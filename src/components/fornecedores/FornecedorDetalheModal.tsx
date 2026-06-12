@@ -1,10 +1,11 @@
-import { X, Building, Mail, Phone, Hash, Tag, ToggleLeft, ToggleRight } from 'lucide-react';
+import { X, Building, Mail, Phone, Hash, Tag, MapPin, ToggleLeft, ToggleRight, Pencil } from 'lucide-react';
 import type { Fornecedor } from '../../lib/database.types';
 
 interface FornecedorDetalheModalProps {
   fornecedor: Fornecedor;
   onClose: () => void;
   onToggleStatus?: (id: string, status: 'ativo' | 'inativo') => void;
+  onEdit?: () => void;
 }
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
@@ -21,8 +22,9 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus }: FornecedorDetalheModalProps) {
+export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus, onEdit }: FornecedorDetalheModalProps) {
   const isAtivo = fornecedor.status === 'ativo';
+  const localizacao = [fornecedor.cidade, fornecedor.estado].filter(Boolean).join(', ');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -36,7 +38,9 @@ export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus }: 
             </div>
             <div>
               <h2 className="font-display font-bold text-sm text-text-primary leading-snug">{fornecedor.nome}</h2>
-              <p className="font-body text-xs text-text-tertiary mt-0.5">Detalhes do fornecedor</p>
+              <p className="font-body text-xs text-text-tertiary mt-0.5">
+                {localizacao || 'Detalhes do fornecedor'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface-1 transition-colors flex-shrink-0">
@@ -56,53 +60,55 @@ export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus }: 
           </div>
 
           <div className="grid grid-cols-1 gap-4 pt-1">
-            <InfoRow
-              icon={<Tag className="w-4 h-4 text-text-tertiary" />}
-              label="CATEGORIA"
-              value={fornecedor.categoria}
-            />
-            <InfoRow
-              icon={<Hash className="w-4 h-4 text-text-tertiary" />}
-              label="CNPJ"
-              value={<span className="font-data">{fornecedor.cnpj || '—'}</span>}
-            />
-            <InfoRow
-              icon={<Building className="w-4 h-4 text-text-tertiary" />}
-              label="CONTATO"
-              value={fornecedor.contato || '—'}
-            />
+            <InfoRow icon={<Tag className="w-4 h-4 text-text-tertiary" />} label="CATEGORIA" value={fornecedor.categoria} />
+            {localizacao && (
+              <InfoRow
+                icon={<MapPin className="w-4 h-4 text-text-tertiary" />}
+                label="LOCALIZAÇÃO"
+                value={<span className="font-data">{localizacao}</span>}
+              />
+            )}
+            <InfoRow icon={<Hash className="w-4 h-4 text-text-tertiary" />} label="CNPJ" value={<span className="font-data">{fornecedor.cnpj || '—'}</span>} />
+            <InfoRow icon={<Building className="w-4 h-4 text-text-tertiary" />} label="CONTATO" value={fornecedor.contato || '—'} />
             <InfoRow
               icon={<Mail className="w-4 h-4 text-text-tertiary" />}
               label="E-MAIL"
               value={<a href={`mailto:${fornecedor.email}`} className="text-mos-700 hover:underline font-data">{fornecedor.email || '—'}</a>}
             />
-            <InfoRow
-              icon={<Phone className="w-4 h-4 text-text-tertiary" />}
-              label="TELEFONE"
-              value={<span className="font-data">{fornecedor.telefone || '—'}</span>}
-            />
+            <InfoRow icon={<Phone className="w-4 h-4 text-text-tertiary" />} label="TELEFONE" value={<span className="font-data">{fornecedor.telefone || '—'}</span>} />
           </div>
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-surface-2 bg-surface-1">
-          {onToggleStatus && (
-            <button
-              onClick={() => { onToggleStatus(fornecedor.id, isAtivo ? 'inativo' : 'ativo'); onClose(); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md border font-body text-sm font-medium transition-colors ${
-                isAtivo
-                  ? 'border-surface-3 text-text-secondary hover:bg-surface-2'
-                  : 'border-status-success/30 text-status-success hover:bg-status-successLight'
-              }`}
-            >
-              {isAtivo
-                ? <><ToggleLeft className="w-4 h-4" /> Desativar</>
-                : <><ToggleRight className="w-4 h-4" /> Ativar</>
-              }
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onToggleStatus && (
+              <button
+                onClick={() => { onToggleStatus(fornecedor.id, isAtivo ? 'inativo' : 'ativo'); onClose(); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md border font-body text-sm font-medium transition-colors ${
+                  isAtivo
+                    ? 'border-surface-3 text-text-secondary hover:bg-surface-2'
+                    : 'border-status-success/30 text-status-success hover:bg-status-successLight'
+                }`}
+              >
+                {isAtivo
+                  ? <><ToggleLeft className="w-4 h-4" /> Desativar</>
+                  : <><ToggleRight className="w-4 h-4" /> Ativar</>
+                }
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={() => { onEdit(); onClose(); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-md border border-surface-3 font-body text-sm font-medium text-text-secondary hover:bg-surface-2 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                Editar
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="ml-auto px-5 py-2 rounded-md bg-text-primary text-white font-body text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-5 py-2 rounded-md bg-text-primary text-white font-body text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Fechar
           </button>

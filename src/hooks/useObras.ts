@@ -35,5 +35,15 @@ export function useObras() {
     setObras(prev => [obra, ...prev]);
   }
 
-  return { obras, loading, error, updateObraImagem, addObra, refetch: fetchObras };
+  async function arquivarObra(obraId: string) {
+    await supabase.from('obras').update({ arquivada: true }).eq('id', obraId);
+    setObras(prev => prev.map(o => o.id === obraId ? { ...o, arquivada: true } : o));
+  }
+
+  async function desarquivarObra(obraId: string) {
+    await supabase.from('obras').update({ arquivada: false }).eq('id', obraId);
+    setObras(prev => prev.map(o => o.id === obraId ? { ...o, arquivada: false } : o));
+  }
+
+  return { obras, loading, error, updateObraImagem, addObra, arquivarObra, desarquivarObra, refetch: fetchObras };
 }
