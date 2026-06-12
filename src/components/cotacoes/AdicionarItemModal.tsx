@@ -15,24 +15,45 @@ const UNIDADES = ['Un', 'M²', 'M³', 'M', 'Kg', 'T', 'L', 'Cx', 'Sc', 'Hr', 'Vb
 
 const inputClass = 'w-full rounded-md border border-surface-3 px-3 py-2 font-data text-sm text-text-primary focus:outline-none focus:border-mos-700 transition-colors bg-white';
 
+function parsePtBr(v: string): number | null {
+  if (!v.trim()) return null;
+  const n = parseFloat(v.replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+function fmtCurrency(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 export function AdicionarItemModal({ grupoId, proximaOrdem, fornecedorIds, onClose, onSaved }: AdicionarItemModalProps) {
   const [descricao, setDescricao] = useState('');
   const [unidade, setUnidade] = useState('Un');
   const [quantidade, setQuantidade] = useState('1');
+  const [valorUnitario, setValorUnitario] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const qty = parsePtBr(quantidade);
+  const vu  = parsePtBr(valorUnitario);
+  const valorTotal = (qty != null && vu != null) ? qty * vu : null;
+
   async function handleSave() {
     if (!descricao.trim()) { setError('Descrição é obrigatória.'); return; }
-    const qty = parseFloat(quantidade);
-    if (!qty || qty <= 0) { setError('Quantidade deve ser maior que zero.'); return; }
+    if (!qty || qty <= 0)  { setError('Quantidade deve ser maior que zero.'); return; }
 
     setSaving(true);
     setError(null);
 
     const { data: item, error: err } = await supabase
       .from('cotacao_itens')
-      .insert({ grupo_id: grupoId, descricao: descricao.trim(), unidade, quantidade: qty, ordem: proximaOrdem })
+      .insert({
+        grupo_id: grupoId,
+        descricao: descricao.trim(),
+        unidade,
+        quantidade: qty,
+        valor_unitario: vu ?? null,
+        ordem: proximaOrdem,
+      })
       .select()
       .single();
 
@@ -86,7 +107,7 @@ export function AdicionarItemModal({ grupoId, proximaOrdem, fornecedorIds, onClo
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Unidade</label>
+              <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Unidade de Medida</label>
               <select className={inputClass} value={unidade} onChange={e => setUnidade(e.target.value)}>
                 {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
@@ -103,6 +124,34 @@ export function AdicionarItemModal({ grupoId, proximaOrdem, fornecedorIds, onClo
                 onChange={e => setQuantidade(e.target.value)}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Valor Unitário (R$)</label>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              className={inputClass}
+              placeholder="0,00"
+              value={valorUnitario}
+              onChange={e => setValorUnitario(e.target.value)}
+            />
+          </div>
+
+          {/* Valor Total preview */}
+          <div className={`rounded-lg p-3 transition-colors ${valorTotal != null ? 'bg-surface-1 border border-surface-2' : 'bg-surface-1/50'}`}>
+            <div className="flex items-center justify-between">
+              <span className="font-body text-xs font-semibold text-text-tertiary tracking-wider">VALOR TOTAL</span>
+              <span className={`font-data font-bold text-base ${valorTotal != null ? 'text-text-primary' : 'text-text-disabled'}`}>
+                {valorTotal != null ? fmtCurrency(valorTotal) : '—'}
+              </span>
+            </div>
+            {qty != null && vu != null && (
+              <p className="font-data text-[10px] text-text-tertiary mt-0.5 text-right">
+                {qty % 1 === 0 ? qty : qty.toFixed(3)} {unidade} × {fmtCurrency(vu)}
+              </p>
+            )}
           </div>
 
           {error && (

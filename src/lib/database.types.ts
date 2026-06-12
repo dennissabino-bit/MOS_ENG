@@ -172,6 +172,7 @@ export interface CotacaoItem {
   descricao: string;
   unidade: string;
   quantidade: number;
+  valor_unitario: number | null;
   ordem: number;
   created_at: string;
 }
