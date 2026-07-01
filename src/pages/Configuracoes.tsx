@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   Settings, Users, Truck, GitBranch, Plus, ChevronDown, ChevronRight,
-  Pencil, Trash2, Loader2, Check, X,
+  Pencil, Trash2, Loader2, Check, X, Archive, ArchiveRestore,
+  Building2, MapPin, Calendar,
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { UsuariosContent } from './Usuarios';
 import { FornecedoresContent } from './Fornecedores';
 import { supabase } from '../lib/supabase';
-import type { Grupo, Filial } from '../lib/database.types';
+import { useObras } from '../hooks/useObras';
+import { formatDate, formatCurrencyFull } from '../lib/formatters';
+import { StatusBadge } from '../components/ui/Badge';
+import type { Grupo, Filial, Obra, Fornecedor } from '../lib/database.types';
 
 // ─── Filiais Tab ──────────────────────────────────────────────────────────────
 
@@ -470,9 +474,238 @@ function FiliaisContent() {
   );
 }
 
+// ─── Arquivados Tab ───────────────────────────────────────────────────────────
+
+type ArquivadoSubTab = 'obras' | 'fornecedores';
+
+const ARQUIVADO_SUBTABS: { id: ArquivadoSubTab; label: string; icon: React.ElementType }[] = [
+  { id: 'obras',         label: 'Obras',         icon: Building2 },
+  { id: 'fornecedores',  label: 'Fornecedores',  icon: Truck     },
+];
+
+function ObrasArquivadasTab() {
+  const { obras, loading, desarquivarObra } = useObras();
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const arquivadas = obras.filter(o => o.arquivada);
+
+  async function handleDesarquivar(obra: Obra) {
+    setRestoring(obra.id);
+    await desarquivarObra(obra.id);
+    setRestoring(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-16 card animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (arquivadas.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <Archive className="w-10 h-10 text-text-disabled mx-auto mb-3" />
+        <p className="font-body text-sm text-text-tertiary">Nenhuma obra arquivada</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {arquivadas.map(obra => {
+        const consumo = obra.orcado > 0 ? Math.round((obra.realizado / obra.orcado) * 100) : 0;
+        return (
+          <div key={obra.id} className="card px-4 py-3 flex items-center gap-4 hover:shadow-card-hover transition-shadow">
+            {/* Thumbnail */}
+            <div className="w-14 h-14 rounded-lg bg-surface-2 flex-shrink-0 overflow-hidden">
+              {obra.imagem_url
+                ? <img src={obra.imagem_url} alt={obra.nome} className="w-full h-full object-cover opacity-60" />
+                : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-5 h-5 text-text-disabled" /></div>
+              }
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="font-data text-xs font-semibold text-mos-700">{obra.codigo}</span>
+                <StatusBadge status={obra.status} />
+              </div>
+              <p className="font-body font-semibold text-sm text-text-primary truncate">{obra.nome}</p>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="flex items-center gap-1 font-body text-xs text-text-tertiary">
+                  <MapPin className="w-3 h-3" />
+                  {obra.localizacao}
+                </span>
+                <span className="flex items-center gap-1 font-body text-xs text-text-tertiary">
+                  <Calendar className="w-3 h-3" />
+                  {formatDate(obra.data_inicio)} → {formatDate(obra.data_fim)}
+                </span>
+              </div>
+            </div>
+
+            {/* Financeiro */}
+            <div className="hidden sm:flex flex-col items-end gap-0.5 flex-shrink-0 text-right">
+              <span className="font-data text-xs text-text-tertiary">Orçado</span>
+              <span className="font-data text-sm font-semibold text-text-primary">{formatCurrencyFull(obra.orcado)}</span>
+              <span className="font-data text-xs text-text-tertiary">{consumo}% consumido</span>
+            </div>
+
+            {/* Action */}
+            <button
+              onClick={() => handleDesarquivar(obra)}
+              disabled={restoring === obra.id}
+              className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border border-status-warning/40 bg-status-warningLight text-status-warning font-body text-sm font-medium hover:bg-status-warning hover:text-white transition-colors disabled:opacity-60"
+            >
+              {restoring === obra.id
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <ArchiveRestore className="w-4 h-4" />
+              }
+              <span className="hidden sm:inline">Desarquivar</span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FornecedoresArquivadosTab() {
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [restoring, setRestoring] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchInativos();
+  }, []);
+
+  async function fetchInativos() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('fornecedores')
+      .select('*')
+      .eq('status', 'inativo')
+      .order('nome');
+    setFornecedores((data ?? []) as Fornecedor[]);
+    setLoading(false);
+  }
+
+  async function handleReativar(id: string) {
+    setRestoring(id);
+    await supabase.from('fornecedores').update({ status: 'ativo' }).eq('id', id);
+    setFornecedores(prev => prev.filter(f => f.id !== id));
+    setRestoring(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-16 card animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (fornecedores.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <Truck className="w-10 h-10 text-text-disabled mx-auto mb-3" />
+        <p className="font-body text-sm text-text-tertiary">Nenhum fornecedor arquivado</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {fornecedores.map(f => (
+        <div key={f.id} className="card px-4 py-3 flex items-center gap-4 hover:shadow-card-hover transition-shadow">
+          {/* Avatar */}
+          <div className="w-10 h-10 rounded-full bg-surface-2 flex-shrink-0 flex items-center justify-center">
+            <Truck className="w-5 h-5 text-text-disabled" />
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p className="font-body font-semibold text-sm text-text-primary truncate">{f.nome}</p>
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+              {f.categoria && (
+                <span className="font-body text-xs text-text-tertiary">{f.categoria}</span>
+              )}
+              {(f.cidade || f.estado) && (
+                <span className="flex items-center gap-1 font-body text-xs text-text-tertiary">
+                  <MapPin className="w-3 h-3" />
+                  {[f.cidade, f.estado].filter(Boolean).join(', ')}
+                </span>
+              )}
+              {f.contato && (
+                <span className="font-body text-xs text-text-tertiary truncate">{f.contato}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Action */}
+          <button
+            onClick={() => handleReativar(f.id)}
+            disabled={restoring === f.id}
+            className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border border-status-warning/40 bg-status-warningLight text-status-warning font-body text-sm font-medium hover:bg-status-warning hover:text-white transition-colors disabled:opacity-60"
+          >
+            {restoring === f.id
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <ArchiveRestore className="w-4 h-4" />
+            }
+            <span className="hidden sm:inline">Reativar</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ArquivadosContent() {
+  const [activeSubTab, setActiveSubTab] = useState<ArquivadoSubTab>('obras');
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1">CONFIGURAÇÕES</p>
+        <h1 className="font-display font-extrabold text-3xl text-text-primary tracking-tight">ARQUIVADOS</h1>
+        <p className="font-body text-sm text-text-tertiary mt-1">
+          Itens arquivados ou desativados — podem ser restaurados a qualquer momento
+        </p>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 bg-surface-2 rounded-xl p-1 self-start w-fit">
+        {ARQUIVADO_SUBTABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSubTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg font-body text-sm font-semibold transition-colors ${
+              activeSubTab === tab.id
+                ? 'bg-status-warning text-white shadow-sm'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <tab.icon className="w-3.5 h-3.5" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-tab content */}
+      {activeSubTab === 'obras'        && <ObrasArquivadasTab />}
+      {activeSubTab === 'fornecedores' && <FornecedoresArquivadosTab />}
+    </div>
+  );
+}
+
 // ─── Module tabs ──────────────────────────────────────────────────────────────
 
-type TabId = 'usuarios' | 'fornecedores' | 'filiais';
+type TabId = 'usuarios' | 'fornecedores' | 'filiais' | 'arquivados';
 
 interface TabDef {
   id: TabId;
@@ -481,9 +714,10 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'usuarios',    label: 'Usuários',    icon: Users   },
-  { id: 'fornecedores',label: 'Fornecedores',icon: Truck   },
-  { id: 'filiais',     label: 'Filiais',     icon: GitBranch },
+  { id: 'usuarios',    label: 'Usuários',    icon: Users      },
+  { id: 'fornecedores',label: 'Fornecedores',icon: Truck      },
+  { id: 'filiais',     label: 'Filiais',     icon: GitBranch  },
+  { id: 'arquivados',  label: 'Arquivados',  icon: Archive    },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -520,6 +754,7 @@ export default function Configuracoes() {
       {activeTab === 'usuarios'     && <UsuariosContent />}
       {activeTab === 'fornecedores' && <FornecedoresContent />}
       {activeTab === 'filiais'      && <FiliaisContent />}
+      {activeTab === 'arquivados'   && <ArquivadosContent />}
     </AppLayout>
   );
 }
