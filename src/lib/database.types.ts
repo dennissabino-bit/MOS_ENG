@@ -1,5 +1,6 @@
 export type ObraStatus = 'em_andamento' | 'planejamento' | 'concluida' | 'pausada';
 export type CotacaoStatus = 'aberta' | 'fechada' | 'aprovada' | 'cancelada';
+export type CotacaoGrupoStatus = 'aberta' | 'fechada';
 export type FornecedorStatus = 'ativo' | 'inativo';
 export type UserCargo = 'master' | 'gestor' | 'engenheiro' | 'comprador';
 export type MedicaoStatus = 'aprovada' | 'pendente' | 'reprovada' | 'a_medir';
@@ -40,6 +41,7 @@ export interface Fornecedor {
   cidade?: string;
   estado?: string;
   nota?: number | null;
+  dados_bancarios?: string | null;
   created_at: string;
 }
 
@@ -101,6 +103,7 @@ export interface Medicao {
   fornecedor_id?: string;
   codigo: string;
   descricao: string;
+  descricao_servico?: string | null;
   unidade: string;
   qtd_orcada: number;
   qtd_medida?: number;
@@ -111,6 +114,14 @@ export interface Medicao {
   created_at: string;
   fornecedor_nome?: string;
   categoria?: EapCategoria;
+  cotacao_grupo_id?: string | null;
+  notas_fiscais?: MedicaoAnexo[];
+}
+
+export interface MedicaoAnexo {
+  nome: string;
+  url: string;
+  tipo: string;
 }
 
 export interface CronogramaEtapa {

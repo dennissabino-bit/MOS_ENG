@@ -21,6 +21,7 @@ interface FormState {
   estado: string;
   status: 'ativo' | 'inativo';
   nota: string;
+  dados_bancarios: string;
 }
 
 const inputClass = 'w-full rounded-md border border-surface-3 px-3 py-2 font-data text-sm text-text-primary focus:outline-none focus:border-mos-700 transition-colors bg-white';
@@ -37,6 +38,7 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
     estado: fornecedor.estado ?? '',
     status: fornecedor.status as 'ativo' | 'inativo',
     nota: fornecedor.nota != null ? String(fornecedor.nota) : '',
+    dados_bancarios: fornecedor.dados_bancarios ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
       estado: form.estado || null,
       status: form.status,
       nota: form.nota !== '' ? parseFloat(form.nota) : null,
+      dados_bancarios: form.dados_bancarios.trim() || null,
     };
 
     const { data, error: err } = await supabase
@@ -165,6 +168,17 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
                 {ESTADOS_BR.map(uf => <option key={uf.sigla} value={uf.sigla}>{uf.sigla} — {uf.nome}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Dados Bancários</label>
+            <textarea
+              className={`${inputClass} resize-none`}
+              rows={3}
+              placeholder={"Ex:\nBanco: Bradesco\nAgência: 1234-5\nConta: 00012345-6\nPIX: cnpj ou chave"}
+              value={form.dados_bancarios}
+              onChange={e => set('dados_bancarios', e.target.value)}
+            />
           </div>
 
           {error && (

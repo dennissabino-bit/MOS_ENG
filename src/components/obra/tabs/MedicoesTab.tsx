@@ -3,6 +3,7 @@ import { Plus, Search, CheckCircle2, Clock, XCircle, Minus, Pencil, Trash2, Rece
 import type { Medicao } from '../../../lib/database.types';
 import { formatCurrencyFull, formatCurrency, formatCurrencyMi } from '../../../lib/formatters';
 import { NovaMedicaoModal } from '../NovaMedicaoModal';
+import { MedicaoDetalheModal } from '../MedicaoDetalheModal';
 
 type CatGroup = 'infraestrutura' | 'superestrutura' | 'instalacoes' | 'acabamentos' | 'extra' | 'outros';
 
@@ -48,6 +49,7 @@ interface MedicoesTabProps {
 
 export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: MedicoesTabProps) {
   const [showModal, setShowModal] = useState(false);
+  const [selectedMedicao, setSelectedMedicao] = useState<Medicao | null>(null);
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('Todas as categorias');
   const [statusFilter, setStatusFilter] = useState('Todos os status');
@@ -272,7 +274,7 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
                       const medPercent = m.qtd_orcada > 0 && m.qtd_medida != null ? (m.qtd_medida / m.qtd_orcada) * 100 : 0;
                       const canEdit = m.status === 'pendente' || m.status === 'a_medir';
                       return (
-                        <tr key={m.id} className="border-b border-surface-2 hover:bg-surface-1 transition-colors">
+                        <tr key={m.id} onClick={() => setSelectedMedicao(m)} className="border-b border-surface-2 hover:bg-surface-1 transition-colors cursor-pointer">
                           <td className="py-2.5 px-4">
                             <span className="font-data text-xs text-text-tertiary">{m.codigo}</span>
                           </td>
@@ -313,12 +315,12 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-1 justify-center">
                               {canEdit && (
-                                <button className="p-1 rounded hover:bg-surface-2 transition-colors">
+                                <button onClick={e => e.stopPropagation()} className="p-1 rounded hover:bg-surface-2 transition-colors">
                                   <Pencil className="w-3.5 h-3.5 text-text-tertiary" />
                                 </button>
                               )}
                               {canEdit && (
-                                <button className="p-1 rounded hover:bg-status-errorLight transition-colors">
+                                <button onClick={e => e.stopPropagation()} className="p-1 rounded hover:bg-status-errorLight transition-colors">
                                   <Trash2 className="w-3.5 h-3.5 text-status-error" />
                                 </button>
                               )}
@@ -359,6 +361,13 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
           obraId={obraId}
           onClose={() => setShowModal(false)}
           onSaved={handleMedicaoSaved}
+        />
+      )}
+
+      {selectedMedicao && (
+        <MedicaoDetalheModal
+          medicao={selectedMedicao}
+          onClose={() => setSelectedMedicao(null)}
         />
       )}
     </div>
