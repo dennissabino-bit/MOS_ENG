@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, MapPin, Users, Package, Calendar, CheckCircle,
   TrendingDown, Trash2, Loader2,
-  FileText, BarChart2,
+  FileText, BarChart2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
@@ -232,6 +232,8 @@ export default function Cotacoes() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<GrupoEnriquecido | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -333,6 +335,11 @@ export default function Cotacoes() {
 
   const activeFilters = [filterStatus, filterObraId, filterCategoria].filter(Boolean).length;
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  function resetPage() { setPage(1); }
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -346,7 +353,7 @@ export default function Cotacoes() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setTab('ativos')}
+                onClick={() => { setTab('ativos'); resetPage(); }}
                 className={`px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
                   tab === 'ativos'
                     ? 'bg-mos-700 text-white shadow-card'
@@ -356,7 +363,7 @@ export default function Cotacoes() {
                 Ativos
               </button>
               <button
-                onClick={() => setTab('arquivados')}
+                onClick={() => { setTab('arquivados'); resetPage(); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
                   tab === 'arquivados'
                     ? 'bg-mos-700 text-white shadow-card'
@@ -385,7 +392,7 @@ export default function Cotacoes() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1 min-w-[140px]">
               <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">STATUS</label>
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); resetPage(); }}
                 className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
                 <option value="">Todos</option>
                 <option value="aberta">Aberta</option>
@@ -394,7 +401,7 @@ export default function Cotacoes() {
             </div>
             <div className="flex flex-col gap-1 min-w-[180px] flex-1 max-w-xs">
               <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">OBRA</label>
-              <select value={filterObraId} onChange={e => setFilterObraId(e.target.value)}
+              <select value={filterObraId} onChange={e => { setFilterObraId(e.target.value); resetPage(); }}
                 className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
                 <option value="">Todas as obras</option>
                 {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
@@ -402,7 +409,7 @@ export default function Cotacoes() {
             </div>
             <div className="flex flex-col gap-1 min-w-[150px]">
               <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">CATEGORIA</label>
-              <select value={filterCategoria} onChange={e => setFilterCategoria(e.target.value)}
+              <select value={filterCategoria} onChange={e => { setFilterCategoria(e.target.value); resetPage(); }}
                 className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
                 <option value="">Todas</option>
                 {categorias.map(c => <option key={c} value={c}>{c}</option>)}
@@ -414,7 +421,7 @@ export default function Cotacoes() {
               </span>
               {activeFilters > 0 && (
                 <button
-                  onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); }}
+                  onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); resetPage(); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 h-8 rounded-md border border-surface-3 bg-surface-0 text-text-secondary font-body text-xs font-medium hover:bg-surface-2 transition-colors"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
@@ -515,7 +522,7 @@ export default function Cotacoes() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(g => (
+            {paged.map(g => (
               <CotacaoCard
                 key={g.id}
                 grupo={g}
@@ -523,6 +530,57 @@ export default function Cotacoes() {
                 onOpen={id => navigate(`/cotacoes/${id}`)}
               />
             ))}
+          </div>
+        )}
+
+        {/* ── Pagination ── */}
+        {!loading && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="font-body text-xs text-text-tertiary">Linhas por pagina:</span>
+              <select
+                value={pageSize}
+                onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+                className="font-body text-sm text-text-primary bg-surface-0 border border-surface-2 rounded px-2 py-1 focus:outline-none"
+              >
+                {[9, 18, 27].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <span className="font-body text-xs text-text-tertiary">
+                Mostrando{' '}
+                <strong className="text-text-primary">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)}</strong>
+                {' '}de{' '}
+                <strong className="text-text-primary">{filtered.length}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-md font-body text-sm text-text-secondary border border-surface-2 hover:bg-surface-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Anterior
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 rounded-full font-data text-sm font-semibold transition-colors ${
+                    p === page ? 'bg-mos-700 text-white' : 'text-text-secondary hover:bg-surface-2'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-md font-body text-sm text-text-secondary border border-surface-2 hover:bg-surface-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Proximo
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>
