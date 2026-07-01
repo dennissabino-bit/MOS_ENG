@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, MapPin, Users, Package, Calendar, CheckCircle,
-  Filter, ChevronDown, TrendingDown, Trash2, Loader2,
+  TrendingDown, Trash2, Loader2,
   FileText, BarChart2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -225,7 +225,6 @@ export default function Cotacoes() {
   const [grupos, setGrupos] = useState<GrupoEnriquecido[]>([]);
   const [obras, setObras] = useState<Pick<Obra, 'id' | 'nome'>[]>([]);
   const [tab, setTab] = useState<'ativos' | 'arquivados'>('ativos');
-  const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterObraId, setFilterObraId] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('');
@@ -340,43 +339,90 @@ export default function Cotacoes() {
     <AppLayout title="Cotações" subtitle={`${ativos.length} cotações ativas`}>
       <div className="p-6 space-y-5">
 
-        {/* ── Tabs + New button ── */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setTab('ativos')}
-              className={`px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
-                tab === 'ativos'
-                  ? 'bg-mos-700 text-white shadow-card'
-                  : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
-              }`}
-            >
-              Ativos
-            </button>
-            <button
-              onClick={() => setTab('arquivados')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
-                tab === 'arquivados'
-                  ? 'bg-mos-700 text-white shadow-card'
-                  : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Arquivados
-              {arquivados.length > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  tab === 'arquivados' ? 'bg-white/20 text-white' : 'bg-mos-700 text-white'
-                }`}>
-                  {arquivados.length}
-                </span>
-              )}
+        {/* ── Sticky top bar: Tabs + Filtros + New button ── */}
+        <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-surface-1 border-b border-surface-2 shadow-sm space-y-3">
+
+          {/* Tabs + button */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTab('ativos')}
+                className={`px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
+                  tab === 'ativos'
+                    ? 'bg-mos-700 text-white shadow-card'
+                    : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
+                }`}
+              >
+                Ativos
+              </button>
+              <button
+                onClick={() => setTab('arquivados')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
+                  tab === 'arquivados'
+                    ? 'bg-mos-700 text-white shadow-card'
+                    : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Arquivados
+                {arquivados.length > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                    tab === 'arquivados' ? 'bg-white/20 text-white' : 'bg-mos-700 text-white'
+                  }`}>
+                    {arquivados.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Nova Cotação
             </button>
           </div>
 
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Nova Cotação
-          </button>
+          {/* ── Filtros inline (sempre visíveis) ── */}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1 min-w-[140px]">
+              <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">STATUS</label>
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
+                <option value="">Todos</option>
+                <option value="aberta">Aberta</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 min-w-[180px] flex-1 max-w-xs">
+              <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">OBRA</label>
+              <select value={filterObraId} onChange={e => setFilterObraId(e.target.value)}
+                className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
+                <option value="">Todas as obras</option>
+                {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 min-w-[150px]">
+              <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider">CATEGORIA</label>
+              <select value={filterCategoria} onChange={e => setFilterCategoria(e.target.value)}
+                className="rounded-md border border-surface-3 px-3 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors h-8">
+                <option value="">Todas</option>
+                {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="flex items-end gap-2 ml-auto">
+              <span className="font-body text-xs text-text-tertiary self-center">
+                {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+              </span>
+              {activeFilters > 0 && (
+                <button
+                  onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 h-8 rounded-md border border-surface-3 bg-surface-0 text-text-secondary font-body text-xs font-medium hover:bg-surface-2 transition-colors"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Limpar ({activeFilters})
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ── Analytics row ── */}
@@ -441,69 +487,6 @@ export default function Cotacoes() {
               <span className="font-data text-sm font-bold text-mos-700">{fmtCurrencyFull(economiaTotal)}</span>
             </div>
           </div>
-        </div>
-
-        {/* ── Filter panel ── */}
-        <div className="card overflow-hidden">
-          <button
-            onClick={() => setShowFilters(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-text-tertiary" />
-              <span className="font-body text-xs font-bold text-text-secondary tracking-wider">PAINEL DE FILTROS</span>
-              {activeFilters > 0 && (
-                <span className="bg-mos-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                  {activeFilters}
-                </span>
-              )}
-            </div>
-            <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showFilters && (
-            <div className="border-t border-surface-2 px-5 py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">STATUS</label>
-                  <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
-                    <option value="">Todos os status</option>
-                    <option value="aberta">Aberta</option>
-                    <option value="fechada">Fechada</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">OBRA</label>
-                  <select value={filterObraId} onChange={e => setFilterObraId(e.target.value)}
-                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
-                    <option value="">Todas as obras</option>
-                    {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">CATEGORIA</label>
-                  <select value={filterCategoria} onChange={e => setFilterCategoria(e.target.value)}
-                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
-                    <option value="">Todas as categorias</option>
-                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <span className="font-body text-xs text-text-tertiary">
-                  {filtered.length} resultado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
-                </span>
-                <button
-                  onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); }}
-                  className="flex items-center gap-2 px-5 py-2 rounded-md bg-mos-700 text-white font-body text-sm font-medium hover:bg-mos-800 transition-colors"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Limpar Filtros
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── Cards grid ── */}
