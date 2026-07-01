@@ -24,7 +24,7 @@ interface DaySlot {
 
 function buildDays(dataInicio: string): DaySlot[] {
   const [y, m, d] = dataInicio.split('-').map(Number);
-  return Array.from({ length: 15 }, (_, i) => {
+  return Array.from({ length: 14 }, (_, i) => {
     const date = new Date(y, m - 1, d + i);
     return {
       slot: i + 1,

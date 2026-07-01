@@ -17,8 +17,18 @@ const inputClass =
   'w-full rounded-md border border-surface-3 px-3 py-2 font-data text-sm text-text-primary focus:outline-none focus:border-mos-700 transition-colors bg-white';
 
 function computeDataInicio(quinzena: 1 | 2, mes: number, ano: number): string {
-  const day = quinzena === 1 ? 1 : 16;
-  return `${ano}-${String(mes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  // Find the first Monday of the month
+  const firstDay = new Date(ano, mes - 1, 1);
+  const dayOfWeek = firstDay.getDay(); // 0=Sun, 1=Mon...
+  const daysToMonday = dayOfWeek === 1 ? 0 : dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+  const firstMonday = new Date(ano, mes - 1, 1 + daysToMonday);
+
+  // Quinzena 1 = first Monday; quinzena 2 = third Monday (first Monday + 14 days)
+  const targetMonday = quinzena === 1 ? firstMonday : new Date(firstMonday.getFullYear(), firstMonday.getMonth(), firstMonday.getDate() + 14);
+  const y = targetMonday.getFullYear();
+  const m = String(targetMonday.getMonth() + 1).padStart(2, '0');
+  const d = String(targetMonday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function NovaPlanilhaModal({ onClose, onSaved }: NovaPlanilhaModalProps) {
