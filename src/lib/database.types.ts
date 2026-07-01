@@ -233,6 +233,23 @@ export interface CotacaoProposta {
   created_at: string;
 }
 
+export interface Grupo {
+  id: string;
+  codigo: string;
+  nome: string;
+  created_at: string;
+}
+
+export interface Filial {
+  id: string;
+  grupo_id: string;
+  codigo: string;
+  descricao: string;
+  ativa: boolean;
+  created_at: string;
+  grupos?: Grupo;
+}
+
 export interface Database {
   public: {
     Tables: {

@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
-  Truck,
   FileText,
   Users,
   Plus,
   Zap,
   CalendarDays,
+  PhoneCall,
+  ClipboardCheck,
+  Settings,
+  ChevronRight,
 } from 'lucide-react';
 import { RoleBadge } from '../ui/Badge';
 import type { UserCargo } from '../../lib/database.types';
@@ -25,39 +28,85 @@ const currentUser = {
   role: 'Administrador',
 };
 
-const navSections = [
-  {
-    label: 'OBRAS',
-    items: [
-      { to: '/',        icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/obras',   icon: Building2,        label: 'Obras'     },
-      { to: '/diarias', icon: CalendarDays,     label: 'Controle de Diárias' },
-    ],
-  },
-  {
-    label: 'SUPRIMENTOS',
-    items: [
-      { to: '/fornecedores', icon: Truck,     label: 'Fornecedores' },
-      { to: '/cotacoes',     icon: FileText,  label: 'Cotações'     },
-    ],
-  },
-  {
-    label: 'ADMINISTRAÇÃO',
-    items: [
-      { to: '/usuarios', icon: Users, label: 'Usuários' },
-    ],
-  },
-  {
-    label: 'MÓDULOS',
-    items: [
-      { to: '/energia', icon: Zap, label: 'Energia' },
-    ],
-  },
+interface NavItem {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  badge?: string;
+  exact?: boolean;
+}
+
+const MAIN_ITEMS: NavItem[] = [
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
 ];
+
+const OBRAS_ITEMS: NavItem[] = [
+  { to: '/obras',    icon: Building2,    label: 'Obras'           },
+  { to: '/diarias',  icon: CalendarDays, label: 'Controle de Diárias' },
+  { to: '/cotacoes', icon: FileText,     label: 'Cotações'        },
+];
+
+const MODULE_ITEMS: NavItem[] = [
+  { to: '/energia',  icon: Zap,            label: 'Energia'   },
+  { to: '/chamados', icon: PhoneCall,       label: 'Chamados',  badge: 'Em breve' },
+  { to: '/checklist',icon: ClipboardCheck, label: 'Checklist', badge: 'Em breve' },
+];
+
+const SECTIONS = [
+  { label: 'PAINEL',   items: MAIN_ITEMS  },
+  { label: 'PROJETOS', items: OBRAS_ITEMS },
+  { label: 'MÓDULOS',  items: MODULE_ITEMS },
+];
+
+function NavItemEl({ item, onClose }: { item: NavItem; onClose?: () => void }) {
+  const location = useLocation();
+  const isActive = item.exact
+    ? location.pathname === item.to
+    : location.pathname.startsWith(item.to);
+
+  if (item.badge) {
+    return (
+      <li>
+        <span className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body font-medium text-text-disabled cursor-not-allowed select-none">
+          <item.icon className="w-4 h-4 flex-shrink-0 opacity-40" strokeWidth={1.8} />
+          <span className="flex-1">{item.label}</span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-surface-2 text-text-tertiary">
+            {item.badge}
+          </span>
+        </span>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <NavLink
+        to={item.to}
+        onClick={onClose}
+        className={`
+          flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+          font-body font-medium cursor-pointer
+          transition-all duration-200 ease-out
+          ${isActive
+            ? 'bg-mos-50 text-mos-700 border-l-2 border-mos-700 pl-[10px]'
+            : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+          }
+        `}
+      >
+        <item.icon
+          className="w-4 h-4 flex-shrink-0"
+          strokeWidth={isActive ? 2.2 : 1.8}
+        />
+        {item.label}
+      </NavLink>
+    </li>
+  );
+}
 
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const isConfigActive = location.pathname.startsWith('/configuracoes');
 
   return (
     <>
@@ -76,7 +125,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           ${mobileOpen ? 'translate-x-0 animate-slide-in' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-surface-2">
+        {/* Brand */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-surface-2 flex-shrink-0">
           <div className="w-8 h-8 bg-mos-700 rounded-md flex items-center justify-center flex-shrink-0">
             <Plus className="w-4 h-4 text-white" strokeWidth={3} />
           </div>
@@ -86,47 +136,44 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           </div>
         </div>
 
+        {/* Nav sections */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-          {navSections.map((section) => (
+          {SECTIONS.map((section) => (
             <div key={section.label}>
               <p className="text-[10px] font-body font-semibold text-text-tertiary tracking-widest px-3 mb-1.5">
                 {section.label}
               </p>
               <ul className="space-y-0.5">
-                {section.items.map(({ to, icon: Icon, label }) => {
-                  const isActive = to === '/'
-                    ? location.pathname === '/'
-                    : location.pathname.startsWith(to);
-                  return (
-                    <li key={to}>
-                      <NavLink
-                        to={to}
-                        onClick={onMobileClose}
-                        className={`
-                          flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                          font-body font-medium cursor-pointer
-                          transition-all duration-200 ease-out
-                          ${isActive
-                            ? 'bg-mos-50 text-mos-700 border-l-2 border-mos-700 pl-[10px]'
-                            : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'
-                          }
-                        `}
-                      >
-                        <Icon
-                          className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'rotate-0' : 'group-hover:rotate-6'}`}
-                          strokeWidth={isActive ? 2.2 : 1.8}
-                        />
-                        {label}
-                      </NavLink>
-                    </li>
-                  );
-                })}
+                {section.items.map((item) => (
+                  <NavItemEl key={item.to} item={item} onClose={onMobileClose} />
+                ))}
               </ul>
             </div>
           ))}
         </nav>
 
-        <div className="px-3 py-4 border-t border-surface-2">
+        {/* Configurações — pinned bottom */}
+        <div className="px-3 pb-1 flex-shrink-0">
+          <Link
+            to="/configuracoes"
+            onClick={onMobileClose}
+            className={`
+              flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+              font-body font-medium transition-all duration-200
+              ${isConfigActive
+                ? 'bg-mos-50 text-mos-700 border-l-2 border-mos-700 pl-[10px]'
+                : 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'
+              }
+            `}
+          >
+            <Settings className="w-4 h-4 flex-shrink-0" strokeWidth={isConfigActive ? 2.2 : 1.8} />
+            <span className="flex-1">Configurações</span>
+            <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+          </Link>
+        </div>
+
+        {/* User */}
+        <div className="px-3 py-3 border-t border-surface-2 flex-shrink-0">
           <button
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors duration-150"
             onClick={() => setUserMenuOpen(!userMenuOpen)}

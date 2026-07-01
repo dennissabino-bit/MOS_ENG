@@ -49,11 +49,11 @@ const PERMISSOES: Permissao[] = [
   { id: 'cronograma_ver',   label: 'Visualizar Cronograma',  descricao: 'Acesso ao cronograma e curva S',                     modulo: 'Cronograma' },
   { id: 'diario_ver',       label: 'Visualizar Diário',      descricao: 'Leitura do diário de obra',                          modulo: 'Diário' },
   { id: 'diario_criar',     label: 'Lançar Diário',          descricao: 'Criar registros no diário de obra',                  modulo: 'Diário' },
-  { id: 'fornecedores_ver', label: 'Visualizar Fornecedores','descricao': 'Acesso ao cadastro de fornecedores',               modulo: 'Fornecedores' },
+  { id: 'fornecedores_ver', label: 'Visualizar Fornecedores', descricao: 'Acesso ao cadastro de fornecedores',                modulo: 'Fornecedores' },
   { id: 'cotacoes_ver',     label: 'Visualizar Cotações',    descricao: 'Acesso ao módulo de cotações',                       modulo: 'Cotações' },
   { id: 'cotacoes_criar',   label: 'Gerenciar Cotações',     descricao: 'Criar, editar e aprovar cotações',                   modulo: 'Cotações' },
   { id: 'usuarios_ver',     label: 'Visualizar Usuários',    descricao: 'Acesso à gestão de usuários',                        modulo: 'Usuários' },
-  { id: 'usuarios_gerenciar','label': 'Gerenciar Usuários',  descricao: 'Convidar, editar permissões e desativar usuários',   modulo: 'Usuários' },
+  { id: 'usuarios_gerenciar', label: 'Gerenciar Usuários',   descricao: 'Convidar, editar permissões e desativar usuários',   modulo: 'Usuários' },
 ];
 
 const MATRIZ_PADRAO: Record<UserCargo, Set<string>> = {
@@ -65,10 +65,10 @@ const MATRIZ_PADRAO: Record<UserCargo, Set<string>> = {
 };
 
 const CARGOS: UserCargo[] = ['administrador', 'gerente', 'engenheiro', 'gestor', 'operacional'];
-
 const MODULOS = [...new Set(PERMISSOES.map(p => p.modulo))];
 
-export default function Usuarios() {
+// Exportado para reuso no módulo Configurações
+export function UsuariosContent() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [search, setSearch] = useState('');
   const [cargoFilter, setCargoFilter] = useState<UserCargo | 'todos'>('todos');
@@ -80,16 +80,11 @@ export default function Usuarios() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsuarios();
-  }, []);
+  useEffect(() => { fetchUsuarios(); }, []);
 
   async function fetchUsuarios() {
     setLoading(true);
-    const { data } = await supabase
-      .from('usuarios')
-      .select('*')
-      .order('nome');
+    const { data } = await supabase.from('usuarios').select('*').order('nome');
     if (data) setUsuarios(data as Usuario[]);
     setLoading(false);
   }
@@ -154,7 +149,7 @@ export default function Usuarios() {
   };
 
   return (
-    <AppLayout title="Usuários" subtitle="Gestão de usuários e permissões">
+    <>
       <div className="p-6 space-y-6">
         <div>
           <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1">ADMINISTRAÇÃO</p>
@@ -410,6 +405,14 @@ export default function Usuarios() {
           onSaved={handleSaved}
         />
       )}
+    </>
+  );
+}
+
+export default function Usuarios() {
+  return (
+    <AppLayout title="Usuários" subtitle="Gestão de usuários e permissões">
+      <UsuariosContent />
     </AppLayout>
   );
 }
