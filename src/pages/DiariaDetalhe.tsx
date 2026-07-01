@@ -215,10 +215,20 @@ export default function DiariaDetalhe() {
 
   return (
     <AppLayout title="Controle de Diárias" subtitle={periodoLabel}>
-      <div className="p-6 space-y-5">
+      <div className="p-6 space-y-5 diaria-print-root">
+
+        {/* ── Print-only header (hidden on screen) ── */}
+        <div className="print-only mb-4 border-b border-surface-3 pb-3">
+          <h1 className="font-display font-bold text-base text-text-primary leading-tight">{pageTitle}</h1>
+          <p className="font-body text-xs text-text-secondary mt-1">
+            {periodoLabel}
+            {planilha.localizacao ? ` · ${planilha.localizacao}` : ''}
+            {isAprovada && planilha.aprovada_em ? ` · Aprovada em ${fmtAprovadaEm(planilha.aprovada_em)}` : ''}
+          </p>
+        </div>
 
         {/* ── Header ── */}
-        <div className="card px-5 py-4">
+        <div className="card px-5 py-4 print-hide">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             {/* Left: back + title */}
             <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -282,7 +292,7 @@ export default function DiariaDetalhe() {
 
         {/* ── Status banner ── */}
         {isAprovada && (
-          <div className="rounded-xl px-5 py-4 bg-status-successLight border border-status-success/20 flex items-center gap-3">
+          <div className="rounded-xl px-5 py-4 bg-status-successLight border border-status-success/20 flex items-center gap-3 print-hide">
             <CheckCircle className="w-5 h-5 text-status-success flex-shrink-0" />
             <div>
               <p className="font-display font-bold text-sm text-status-success">Planilha Aprovada</p>
@@ -294,7 +304,7 @@ export default function DiariaDetalhe() {
         )}
 
         {/* ── KPI cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 print-hide">
           <KpiCard
             label="Total da Quinzena"
             sub="VALOR CONSOLIDADO"
@@ -338,28 +348,28 @@ export default function DiariaDetalhe() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse" style={{ minWidth: '960px' }}>
+            <div className="overflow-x-auto diaria-print-table-wrap">
+              <table className="w-full border-collapse diaria-print-table" style={{ minWidth: '960px' }}>
                 <thead>
                   <tr className="bg-surface-2 border-b border-surface-3">
-                    <th className="text-left px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-36">
+                    <th className="col-nome text-left px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-36">
                       Nome
                     </th>
-                    <th className="text-left px-3 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-28">
+                    <th className="col-funcao text-left px-3 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-28">
                       Função
                     </th>
-                    <th className="text-right px-3 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-20">
+                    <th className="col-valor text-right px-3 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-20">
                       R$ Dia
                     </th>
                     {days.map(d => (
-                      <th key={d.slot} className="text-center py-2 w-10">
+                      <th key={d.slot} className="col-dia text-center py-2 w-10">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className="font-data text-xs font-bold text-text-primary">{d.calendarDay}</span>
                           <span className="font-body text-[8px] font-semibold text-text-tertiary">{d.weekday}</span>
                         </div>
                       </th>
                     ))}
-                    <th className="text-right px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-28">
+                    <th className="col-total text-right px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-28">
                       Total
                     </th>
                   </tr>
@@ -372,13 +382,13 @@ export default function DiariaDetalhe() {
                         key={f.id}
                         className={`border-b border-surface-2 transition-colors ${fi % 2 === 1 ? 'bg-surface-1' : 'bg-white'}`}
                       >
-                        <td className="px-4 py-3">
+                        <td className="col-nome px-4 py-3">
                           <span className="font-body font-bold text-sm text-text-primary">{f.nome}</span>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="col-funcao px-3 py-3">
                           <span className="font-body text-xs text-text-secondary">{f.funcao || '—'}</span>
                         </td>
-                        <td className="px-3 py-3 text-right">
+                        <td className="col-valor px-3 py-3 text-right">
                           <span className="font-data text-xs font-semibold text-text-secondary">
                             R$ {f.valor_dia.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </span>
@@ -388,7 +398,7 @@ export default function DiariaDetalhe() {
                           const present = presencas.has(key);
                           const busy = toggling.has(key);
                           return (
-                            <td key={d.slot} className="py-2 text-center">
+                            <td key={d.slot} className="col-dia day-cell py-2 text-center">
                               <button
                                 onClick={() => togglePresenca(f.id, d.slot)}
                                 disabled={isAprovada || busy}
@@ -403,7 +413,7 @@ export default function DiariaDetalhe() {
                             </td>
                           );
                         })}
-                        <td className="px-4 py-3 text-right">
+                        <td className="col-total px-4 py-3 text-right">
                           <span className="font-data text-sm font-bold text-mos-700">
                             {formatCurrencyFull(rowData?.total ?? 0)}
                           </span>

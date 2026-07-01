@@ -90,3 +90,93 @@ h1, h2, h3, h4, h5, h6 {
   .font-body    { font-family: var(--font-body); }
   .font-data    { font-family: var(--font-data); }
 }
+
+/* ─── Print styles — Diárias PDF landscape ──────────────────────────────── */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm 12mm;
+  }
+
+  /* Hide everything that isn't the print content */
+  .print-hide,
+  nav,
+  aside,
+  header {
+    display: none !important;
+  }
+
+  /* Reset page layout so content fills the sheet */
+  html, body, #root {
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Remove the app shell constraints */
+  .flex.h-screen { display: block !important; height: auto !important; }
+  .flex-1.flex.flex-col { display: block !important; overflow: visible !important; }
+  main { overflow: visible !important; height: auto !important; }
+
+  /* Remove card shadows / borders so print looks clean */
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #e8e8e8 !important;
+    border-radius: 0 !important;
+  }
+
+  /* The main page wrapper */
+  .diaria-print-root {
+    padding: 0 !important;
+  }
+
+  /* Show the print-only header */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Presence table: fill width, fixed layout, compact */
+  .diaria-print-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  .diaria-print-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+    font-size: 9px !important;
+    border-collapse: collapse !important;
+  }
+
+  .diaria-print-table th,
+  .diaria-print-table td {
+    padding: 4px 3px !important;
+    overflow: hidden !important;
+  }
+
+  /* Column width distribution across landscape A4 (~277mm usable) */
+  .diaria-print-table .col-nome   { width: 16% !important; }
+  .diaria-print-table .col-funcao { width: 11% !important; }
+  .diaria-print-table .col-valor  { width: 8%  !important; }
+  .diaria-print-table .col-dia    { width: 4%  !important; }
+  .diaria-print-table .col-total  { width: 8%  !important; }
+
+  /* Day check cells: smaller */
+  .diaria-print-table .day-cell button {
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 2px !important;
+  }
+
+  /* Keep footer total row together */
+  tfoot tr {
+    page-break-inside: avoid !important;
+  }
+}
+
+/* Hidden on screen, visible only when printing */
+.print-only {
+  display: none;
+}
+
