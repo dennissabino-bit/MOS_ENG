@@ -8,6 +8,7 @@ import {
   Users,
   Plus,
   Zap,
+  CalendarDays,
 } from 'lucide-react';
 import { RoleBadge } from '../ui/Badge';
 import type { UserCargo } from '../../lib/database.types';
@@ -26,10 +27,11 @@ const currentUser = {
 
 const navSections = [
   {
-    label: 'VISÃO GERAL',
+    label: 'OBRAS',
     items: [
-      { to: '/',      icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/obras', icon: Building2,        label: 'Obras'     },
+      { to: '/',        icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/obras',   icon: Building2,        label: 'Obras'     },
+      { to: '/diarias', icon: CalendarDays,     label: 'Controle de Diárias' },
     ],
   },
   {

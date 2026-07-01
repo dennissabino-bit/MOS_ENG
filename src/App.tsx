@@ -6,6 +6,8 @@ import Fornecedores from './pages/Fornecedores';
 import Cotacoes from './pages/Cotacoes';
 import CotacaoComparativo from './pages/CotacaoComparativo';
 import Usuarios from './pages/Usuarios';
+import Diarias from './pages/Diarias';
+import DiariaDetalhe from './pages/DiariaDetalhe';
 import EnergiaApp from './energia/EnergiaApp';
 
 export default function App() {
@@ -19,9 +21,12 @@ export default function App() {
         <Route path="/cotacoes"       element={<Cotacoes />} />
         <Route path="/cotacoes/:id"   element={<CotacaoComparativo />} />
         <Route path="/usuarios"       element={<Usuarios />} />
+        <Route path="/diarias"        element={<Diarias />} />
+        <Route path="/diarias/:id"    element={<DiariaDetalhe />} />
         <Route path="/energia/*"      element={<EnergiaApp />} />
         <Route path="*"               element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
+

@@ -153,7 +153,42 @@ export interface DiarioObra {
   created_at: string;
 }
 
-export type CotacaoGrupoStatus = 'aberta' | 'fechada';
+export type DiariaPlanilhaStatus = 'rascunho' | 'aprovada';
+
+export interface DiariaPlanilha {
+  id: string;
+  obra_id: string | null;
+  nome_equipe: string;
+  quinzena: 1 | 2;
+  mes: number;
+  ano: number;
+  data_inicio: string;
+  localizacao: string | null;
+  status: DiariaPlanilhaStatus;
+  aprovada_em: string | null;
+  created_at: string;
+  obras?: Pick<Obra, 'nome' | 'localizacao'>;
+}
+
+export interface DiariaFuncionario {
+  id: string;
+  planilha_id: string;
+  nome: string;
+  funcao: string;
+  valor_dia: number;
+  ordem: number;
+  created_at: string;
+}
+
+export interface DiariaPresenca {
+  id: string;
+  planilha_id: string;
+  funcionario_id: string;
+  dia: number;
+  created_at: string;
+}
+
+
 
 export interface CotacaoGrupo {
   id: string;
