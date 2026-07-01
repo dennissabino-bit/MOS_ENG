@@ -1,209 +1,506 @@
-import { useState, useEffect } from 'react';
-import { Search, Plus, FileText, ArrowRight, Tag } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Plus, MapPin, Users, Package, Calendar, CheckCircle,
+  Filter, ChevronDown, TrendingDown, Trash2, Loader2,
+  FileText, TrendingUp,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { NovaCotacaoModal } from '../components/cotacoes/NovaCotacaoModal';
 import { supabase } from '../lib/supabase';
-import type { CotacaoGrupo, CotacaoGrupoStatus } from '../lib/database.types';
+import type { CotacaoGrupo, Obra } from '../lib/database.types';
 
-type Filter = CotacaoGrupoStatus | 'todas';
+// ─── types ────────────────────────────────────────────────────────────────────
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'todas',   label: 'Todas'    },
-  { key: 'aberta',  label: 'Abertas'  },
-  { key: 'fechada', label: 'Fechadas' },
-];
+interface GrupoEnriquecido extends CotacaoGrupo {
+  fornCount: number;
+  itemCount: number;
+  economia: number | null;
+  winnerNome?: string;
+}
 
-export default function Cotacoes() {
-  const navigate = useNavigate();
-  const [grupos, setGrupos] = useState<CotacaoGrupo[]>([]);
-  const [filter, setFilter] = useState<Filter>('todas');
-  const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    fetchGrupos();
-  }, []);
+function fmtCurrencyFull(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
-  async function fetchGrupos() {
-    setLoading(true);
-    const { data } = await supabase
-      .from('cotacao_grupos')
-      .select('*, obras(nome, codigo)')
-      .order('created_at', { ascending: false });
-    if (data) setGrupos(data as CotacaoGrupo[]);
-    setLoading(false);
-  }
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
-  const total    = grupos.length;
-  const abertas  = grupos.filter(g => g.status === 'aberta').length;
-  const fechadas = grupos.filter(g => g.status === 'fechada').length;
+function monthKey(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
-  const filtered = grupos.filter(g => {
-    const matchFilter = filter === 'todas' || g.status === filter;
-    const matchSearch = !search
-      || g.titulo.toLowerCase().includes(search.toLowerCase())
-      || (g.obras?.nome ?? '').toLowerCase().includes(search.toLowerCase())
-      || (g.categoria ?? '').toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
+// ─── Delete confirm modal ─────────────────────────────────────────────────────
+
+function ConfirmDeleteModal({
+  titulo, onConfirm, onCancel, saving,
+}: { titulo: string; onConfirm: () => void; onCancel: () => void; saving: boolean }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="w-10 h-10 rounded-full bg-status-errorLight flex items-center justify-center mx-auto mb-3">
+            <Trash2 className="w-5 h-5 text-status-error" />
+          </div>
+          <h3 className="font-display font-bold text-base text-text-primary mb-1">Excluir Cotação?</h3>
+          <p className="font-body text-sm text-text-secondary">
+            A cotação <span className="font-semibold text-text-primary">"{titulo}"</span>, seus itens e propostas serão excluídos permanentemente.
+          </p>
+        </div>
+        <div className="flex gap-3 px-6 pb-6">
+          <button onClick={onCancel}
+            className="flex-1 px-4 py-2 rounded-md border border-surface-3 font-body text-sm text-text-secondary hover:bg-surface-2 transition-colors">
+            Cancelar
+          </button>
+          <button onClick={onConfirm} disabled={saving}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-status-error text-white font-body text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saving ? 'Excluindo…' : 'Excluir'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Mini bar chart ───────────────────────────────────────────────────────────
+
+function MiniBarChart({ data }: { data: { label: string; value: number }[] }) {
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div className="flex items-end gap-1.5 h-16">
+      {data.map((d, i) => {
+        const pct = (d.value / max) * 100;
+        const isLast = i === data.length - 1;
+        return (
+          <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full flex items-end" style={{ height: '48px' }}>
+              <div
+                className={`w-full rounded-t-sm transition-all duration-500 ${isLast ? 'bg-mos-700' : 'bg-surface-3'}`}
+                style={{ height: `${Math.max(pct, 4)}%` }}
+              />
+            </div>
+            {(i === 0 || i === data.length - 1 || i === Math.floor(data.length / 2)) && (
+              <span className="font-data text-[8px] text-text-disabled">{d.label}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Cotacao Card ─────────────────────────────────────────────────────────────
+
+function CotacaoCard({
+  grupo, onDelete, onOpen,
+}: {
+  grupo: GrupoEnriquecido;
+  onDelete: (g: GrupoEnriquecido) => void;
+  onOpen: (id: string) => void;
+}) {
+  const isFechada = grupo.status === 'fechada';
 
   return (
-    <AppLayout title="Cotações" subtitle="Comparativo de preços entre fornecedores">
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="card p-4">
-            <p className="font-display font-bold text-2xl text-text-primary">{total}</p>
-            <p className="font-body text-xs text-text-tertiary mt-0.5">Total de Cotações</p>
-          </div>
-          <div className="card p-4">
-            <p className="font-display font-bold text-2xl text-status-info">{abertas}</p>
-            <p className="font-body text-xs text-text-tertiary mt-0.5">Em Andamento</p>
-          </div>
-          <div className="card p-4">
-            <p className="font-display font-bold text-2xl text-status-success">{fechadas}</p>
-            <p className="font-body text-xs text-text-tertiary mt-0.5">Fechadas</p>
+    <div
+      onClick={() => onOpen(grupo.id)}
+      className="card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow duration-200 flex flex-col"
+    >
+      <div className="px-4 pt-4 pb-3 flex-1">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-display font-bold text-sm text-text-primary leading-snug flex-1 min-w-0">
+            {grupo.titulo}
+          </h3>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xs font-body text-[10px] font-bold tracking-wide ${
+              isFechada
+                ? 'bg-status-successLight text-status-success'
+                : 'bg-status-infoLight text-status-info'
+            }`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+              {isFechada ? 'FECHADA' : 'ABERTA'}
+            </span>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(grupo); }}
+              className="p-1 rounded-md text-text-disabled hover:text-status-error hover:bg-status-errorLight transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
-            <input
-              type="text"
-              placeholder="Buscar cotação, obra..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700 transition-colors shadow-card"
-            />
+        {grupo.obras?.nome && (
+          <div className="flex items-center gap-1 mb-3">
+            <MapPin className="w-3 h-3 text-text-tertiary flex-shrink-0" />
+            <span className="font-body text-[10px] font-semibold text-text-tertiary tracking-wide uppercase truncate">
+              {grupo.obras.nome}
+            </span>
           </div>
-          <div className="flex gap-1.5">
-            {FILTERS.map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3 py-1.5 rounded-lg font-body text-sm font-medium transition-colors ${
-                  filter === f.key
-                    ? 'bg-text-primary text-white'
-                    : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+        )}
+
+        {isFechada && grupo.winnerNome && (
+          <div className="flex items-center gap-2.5 bg-status-successLight rounded-md px-3 py-2 mb-3">
+            <CheckCircle className="w-4 h-4 text-status-success flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="font-body text-[9px] font-bold text-status-success tracking-[0.12em]">FORNECEDOR SELECIONADO</p>
+              <p className="font-body text-sm font-bold text-text-primary truncate">{grupo.winnerNome}</p>
+            </div>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="ml-auto btn-primary flex items-center gap-2"
-          >
+        )}
+
+        {grupo.economia != null && grupo.economia > 0 && (
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingDown className="w-3 h-3 text-status-success" />
+            <span className="font-data text-xs font-semibold text-status-success">
+              Economia: {fmtCurrencyFull(grupo.economia)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-surface-2 px-4 py-3 bg-surface-1">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3 text-text-tertiary" />
+              <span className="font-data text-sm font-bold text-text-primary">{grupo.fornCount}</span>
+            </div>
+            <span className="font-body text-[9px] font-semibold text-text-disabled tracking-wider">FORNECEDORES</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              <Package className="w-3 h-3 text-text-tertiary" />
+              <span className="font-data text-sm font-bold text-text-primary">{grupo.itemCount}</span>
+            </div>
+            <span className="font-body text-[9px] font-semibold text-text-disabled tracking-wider">ITENS</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-text-tertiary" />
+              <span className="font-data text-[10px] font-bold text-text-primary">{fmtDate(grupo.created_at)}</span>
+            </div>
+            <span className="font-body text-[9px] font-semibold text-text-disabled tracking-wider">DATA</span>
+          </div>
+        </div>
+
+        {grupo.categoria && (
+          <div className="mt-2 pt-2 border-t border-surface-2">
+            <span className="font-body text-[9px] font-semibold text-text-disabled tracking-wider">
+              CATEGORIA: <span className="text-text-secondary">{grupo.categoria.toUpperCase()}</span>
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function Cotacoes() {
+  const navigate = useNavigate();
+
+  const [grupos, setGrupos] = useState<GrupoEnriquecido[]>([]);
+  const [obras, setObras] = useState<Pick<Obra, 'id' | 'nome'>[]>([]);
+  const [tab, setTab] = useState<'ativos' | 'arquivados'>('ativos');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterObraId, setFilterObraId] = useState('');
+  const [filterCategoria, setFilterCategoria] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<GrupoEnriquecido | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => { fetchAll(); }, []);
+
+  async function fetchAll() {
+    setLoading(true);
+
+    const [gruposRes, itensRes, propostasRes, obrasRes] = await Promise.all([
+      supabase.from('cotacao_grupos')
+        .select('*, obras(nome, codigo), fornecedores(nome)')
+        .order('created_at', { ascending: false }),
+      supabase.from('cotacao_itens').select('id, grupo_id'),
+      supabase.from('cotacao_propostas').select('grupo_id, fornecedor_id, item_id, preco_unitario'),
+      supabase.from('obras').select('id, nome').order('nome'),
+    ]);
+
+    const rawGrupos = (gruposRes.data ?? []) as CotacaoGrupo[];
+    const itens     = (itensRes.data    ?? []) as { id: string; grupo_id: string }[];
+    const props     = (propostasRes.data ?? []) as { grupo_id: string; fornecedor_id: string; item_id: string; preco_unitario: number | null }[];
+
+    const winnerIds = [...new Set(rawGrupos.map(g => g.fornecedor_vencedor_id).filter(Boolean) as string[])];
+    let winnerMap: Record<string, string> = {};
+    if (winnerIds.length > 0) {
+      const { data: ws } = await supabase.from('fornecedores').select('id, nome').in('id', winnerIds);
+      if (ws) winnerMap = Object.fromEntries(ws.map((w: { id: string; nome: string }) => [w.id, w.nome]));
+    }
+
+    const enriched: GrupoEnriquecido[] = rawGrupos.map(g => {
+      const gItens  = itens.filter(i => i.grupo_id === g.id);
+      const gProps  = props.filter(p => p.grupo_id === g.id);
+      const fornIds = [...new Set(gProps.map(p => p.fornecedor_id))];
+
+      const fornTotals = fornIds.map(fid =>
+        gItens.reduce((acc, item) => {
+          const p = gProps.find(pr => pr.fornecedor_id === fid && pr.item_id === item.id);
+          return acc + (p?.preco_unitario ?? 0);
+        }, 0)
+      ).filter(t => t > 0);
+
+      const economia = fornTotals.length >= 2
+        ? Math.max(...fornTotals) - Math.min(...fornTotals)
+        : null;
+
+      return {
+        ...g,
+        fornCount: fornIds.length,
+        itemCount: gItens.length,
+        economia,
+        winnerNome: g.fornecedor_vencedor_id ? winnerMap[g.fornecedor_vencedor_id] : undefined,
+      };
+    });
+
+    setGrupos(enriched);
+    setObras((obrasRes.data ?? []) as Pick<Obra, 'id' | 'nome'>[]);
+    setLoading(false);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    await supabase.from('cotacao_grupos').delete().eq('id', deleteTarget.id);
+    setGrupos(prev => prev.filter(g => g.id !== deleteTarget.id));
+    setDeleteTarget(null);
+    setDeleting(false);
+  }
+
+  const ativos     = grupos.filter(g => g.status === 'aberta');
+  const arquivados = grupos.filter(g => g.status === 'fechada');
+  const tabList    = tab === 'ativos' ? ativos : arquivados;
+
+  const categorias = useMemo(() =>
+    [...new Set(grupos.map(g => g.categoria).filter(Boolean) as string[])].sort(),
+    [grupos]);
+
+  const filtered = tabList.filter(g => {
+    if (filterStatus && g.status !== filterStatus) return false;
+    if (filterObraId && g.obra_id !== filterObraId) return false;
+    if (filterCategoria && g.categoria !== filterCategoria) return false;
+    return true;
+  });
+
+  const economiaTotal = grupos
+    .filter(g => g.status === 'fechada' && g.economia != null)
+    .reduce((acc, g) => acc + (g.economia ?? 0), 0);
+
+  const chartData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      const value = grupos
+        .filter(g => g.status === 'fechada' && g.economia != null && monthKey(g.created_at) === key)
+        .reduce((acc, g) => acc + (g.economia ?? 0), 0);
+      return { label, value };
+    });
+  }, [grupos]);
+
+  return (
+    <AppLayout title="Cotações" subtitle={`${ativos.length} cotações ativas`}>
+      <div className="p-6 space-y-5">
+
+        {/* ── Tabs + New button ── */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setTab('ativos')}
+              className={`px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
+                tab === 'ativos'
+                  ? 'bg-mos-700 text-white shadow-card'
+                  : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
+              }`}
+            >
+              Ativos
+            </button>
+            <button
+              onClick={() => setTab('arquivados')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-body text-sm font-semibold transition-colors ${
+                tab === 'arquivados'
+                  ? 'bg-mos-700 text-white shadow-card'
+                  : 'bg-surface-0 border border-surface-3 text-text-secondary hover:bg-surface-2'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Arquivados
+              {arquivados.length > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                  tab === 'arquivados' ? 'bg-white/20 text-white' : 'bg-mos-700 text-white'
+                }`}>
+                  {arquivados.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Nova Cotação
           </button>
         </div>
 
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-2">
-                  <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-wider">COTAÇÃO</th>
-                  <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-wider hidden md:table-cell">OBRA</th>
-                  <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-wider hidden lg:table-cell">CATEGORIA</th>
-                  <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-wider">STATUS</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  [...Array(4)].map((_, i) => (
-                    <tr key={i} className="border-b border-surface-2">
-                      <td className="px-5 py-3.5" colSpan={5}>
-                        <div className="h-4 bg-surface-2 rounded animate-pulse w-3/4" />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  filtered.map(g => (
-                    <tr
-                      key={g.id}
-                      className="border-b border-surface-2 last:border-0 hover:bg-surface-1 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/cotacoes/${g.id}`)}
-                    >
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-4 h-4 text-text-tertiary" />
-                          </div>
-                          <div>
-                            <p className="font-body font-semibold text-sm text-text-primary">{g.titulo}</p>
-                            <p className="font-data text-xs text-text-tertiary">
-                              {new Date(g.created_at).toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 hidden md:table-cell">
-                        <div>
-                          <p className="font-body text-sm text-text-primary">{g.obras?.nome ?? '—'}</p>
-                          {g.obras?.codigo && (
-                            <p className="font-data text-xs text-mos-700">{g.obras.codigo}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 hidden lg:table-cell">
-                        {g.categoria ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-2 font-body text-xs text-text-secondary">
-                            <Tag className="w-3 h-3" />
-                            {g.categoria}
-                          </span>
-                        ) : (
-                          <span className="font-body text-sm text-text-disabled">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs text-xs font-body font-medium ${
-                          g.status === 'aberta'
-                            ? 'bg-status-infoLight text-status-info'
-                            : 'bg-status-successLight text-status-success'
-                        }`}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-                          {g.status === 'aberta' ? 'Aberta' : 'Fechada'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <button
-                          onClick={e => { e.stopPropagation(); navigate(`/cotacoes/${g.id}`); }}
-                          className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-text-secondary hover:text-mos-700 transition-colors"
-                        >
-                          Abrir Comparativo
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* ── Analytics row ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-2 rounded-xl p-5 bg-gradient-to-br from-[#052e16] to-[#14532d] shadow-card">
+            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center mb-4">
+              <TrendingDown className="w-5 h-5 text-green-300" />
+            </div>
+            <p className="font-body text-[10px] font-bold text-green-400 tracking-[0.15em] mb-1">ECONOMIA ACUMULADA</p>
+            <p className="font-body text-[10px] text-green-600 tracking-wide mb-3">TOTAL ACUMULADO DE NEGOCIAÇÕES</p>
+            <p className="font-display font-bold text-3xl text-white mb-3">{fmtCurrencyFull(economiaTotal)}</p>
+            {arquivados.length > 0 && (
+              <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
+                <TrendingUp className="w-3 h-3 text-green-300" />
+                <span className="font-body text-xs text-green-300 font-semibold">
+                  {arquivados.length} cotações fechadas
+                </span>
+              </div>
+            )}
           </div>
-          {!loading && filtered.length === 0 && (
-            <div className="py-16 text-center">
-              <FileText className="w-10 h-10 text-text-disabled mx-auto mb-3" />
-              <p className="font-body text-sm text-text-tertiary">Nenhuma cotação encontrada</p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="mt-4 btn-primary flex items-center gap-2 mx-auto"
-              >
-                <Plus className="w-4 h-4" />
-                Nova Cotação
-              </button>
+
+          <div className="lg:col-span-3 card p-5">
+            <div className="flex items-start justify-between mb-1">
+              <div>
+                <p className="font-body text-[10px] font-bold text-text-tertiary tracking-[0.15em]">ECONOMIA MENSAL</p>
+                <p className="font-body text-[10px] text-text-disabled">HISTÓRICO DOS ÚLTIMOS 12 MESES</p>
+              </div>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-2 font-body text-[10px] font-semibold text-text-tertiary">
+                <Calendar className="w-3 h-3" />
+                MENSAL
+              </span>
+            </div>
+            <div className="mt-4">
+              <MiniBarChart data={chartData} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Filter panel ── */}
+        <div className="card overflow-hidden">
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-text-tertiary" />
+              <span className="font-body text-xs font-bold text-text-secondary tracking-wider">PAINEL DE FILTROS</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showFilters && (
+            <div className="border-t border-surface-2 px-5 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">STATUS</label>
+                  <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
+                    <option value="">Todos os status</option>
+                    <option value="aberta">Aberta</option>
+                    <option value="fechada">Fechada</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">OBRA</label>
+                  <select value={filterObraId} onChange={e => setFilterObraId(e.target.value)}
+                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
+                    <option value="">Todas as obras</option>
+                    {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-body text-[10px] font-bold text-text-tertiary tracking-wider block mb-1.5">CATEGORIA</label>
+                  <select value={filterCategoria} onChange={e => setFilterCategoria(e.target.value)}
+                    className="w-full rounded-md border border-surface-3 px-3 py-2 font-body text-sm text-text-primary focus:outline-none focus:border-mos-700 bg-white transition-colors">
+                    <option value="">Todas as categorias</option>
+                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); }}
+                  className="flex items-center gap-2 px-5 py-2 rounded-md bg-mos-700 text-white font-body text-sm font-medium hover:bg-mos-800 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Limpar Filtros
+                </button>
+              </div>
             </div>
           )}
         </div>
+
+        {/* ── Cards grid ── */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card p-4 space-y-3 animate-skeleton">
+                <div className="h-4 bg-surface-2 rounded w-3/4" />
+                <div className="h-3 bg-surface-2 rounded w-1/2" />
+                <div className="h-10 bg-surface-2 rounded" />
+                <div className="h-8 bg-surface-2 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="card py-20 text-center">
+            <FileText className="w-10 h-10 text-text-disabled mx-auto mb-3" />
+            <p className="font-body text-sm text-text-tertiary mb-4">
+              {tabList.length === 0 ? 'Nenhuma cotação encontrada' : 'Nenhuma cotação corresponde ao filtro'}
+            </p>
+            {tabList.length === 0 && (
+              <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 mx-auto">
+                <Plus className="w-4 h-4" />Nova Cotação
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map(g => (
+              <CotacaoCard
+                key={g.id}
+                grupo={g}
+                onDelete={setDeleteTarget}
+                onOpen={id => navigate(`/cotacoes/${id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {showModal && (
-        <NovaCotacaoModal onClose={() => setShowModal(false)} />
+        <NovaCotacaoModal
+          onClose={() => setShowModal(false)}
+          onSaved={newGrupo => {
+            setGrupos(prev => [{ ...(newGrupo as CotacaoGrupo), fornCount: 0, itemCount: 0, economia: null }, ...prev]);
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          titulo={deleteTarget.titulo}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+          saving={deleting}
+        />
       )}
     </AppLayout>
   );
