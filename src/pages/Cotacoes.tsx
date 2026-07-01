@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, MapPin, Users, Package, Calendar, CheckCircle,
   Filter, ChevronDown, TrendingDown, Trash2, Loader2,
-  FileText, TrendingUp,
+  FileText, BarChart2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
@@ -73,24 +73,41 @@ function ConfirmDeleteModal({
 function MiniBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div className="flex items-end gap-1.5 h-16">
-      {data.map((d, i) => {
-        const pct = (d.value / max) * 100;
-        const isLast = i === data.length - 1;
-        return (
-          <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full flex items-end" style={{ height: '48px' }}>
-              <div
-                className={`w-full rounded-t-sm transition-all duration-500 ${isLast ? 'bg-mos-700' : 'bg-surface-3'}`}
-                style={{ height: `${Math.max(pct, 4)}%` }}
-              />
+    <div className="w-full">
+      <div className="flex items-end gap-1 h-24 w-full">
+        {data.map((d, i) => {
+          const pct = (d.value / max) * 100;
+          const isLast = i === data.length - 1;
+          const hasValue = d.value > 0;
+          return (
+            <div key={`${d.label}-${i}`} className="flex-1 flex flex-col items-center gap-1 group relative">
+              <div className="w-full flex items-end" style={{ height: '80px' }}>
+                <div
+                  title={`${d.label}: ${fmtCurrencyFull(d.value)}`}
+                  className={`w-full rounded-t-sm transition-all duration-500 ${
+                    isLast
+                      ? 'bg-mos-700'
+                      : hasValue
+                        ? 'bg-mos-200 group-hover:bg-mos-300'
+                        : 'bg-surface-2'
+                  }`}
+                  style={{ height: `${Math.max(pct, 3)}%` }}
+                />
+              </div>
             </div>
-            {(i === 0 || i === data.length - 1 || i === Math.floor(data.length / 2)) && (
-              <span className="font-data text-[8px] text-text-disabled">{d.label}</span>
+          );
+        })}
+      </div>
+      {/* X axis labels */}
+      <div className="flex items-start gap-1 mt-1.5">
+        {data.map((d, i) => (
+          <div key={`label-${i}`} className="flex-1 flex justify-center">
+            {(i === 0 || i === data.length - 1 || i === Math.floor((data.length - 1) / 2)) && (
+              <span className="font-data text-[9px] text-text-disabled capitalize">{d.label}</span>
             )}
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -224,7 +241,7 @@ export default function Cotacoes() {
 
     const [gruposRes, itensRes, propostasRes, obrasRes] = await Promise.all([
       supabase.from('cotacao_grupos')
-        .select('*, obras(nome, codigo), fornecedores(nome)')
+        .select('*, obras(nome, codigo)')
         .order('created_at', { ascending: false }),
       supabase.from('cotacao_itens').select('id, grupo_id'),
       supabase.from('cotacao_propostas').select('grupo_id, fornecedor_id, item_id, preco_unitario'),
@@ -281,6 +298,8 @@ export default function Cotacoes() {
     setDeleting(false);
   }
 
+  // ── derived ─────────────────────────────────────────────────────────────────
+
   const ativos     = grupos.filter(g => g.status === 'aberta');
   const arquivados = grupos.filter(g => g.status === 'fechada');
   const tabList    = tab === 'ativos' ? ativos : arquivados;
@@ -312,6 +331,10 @@ export default function Cotacoes() {
       return { label, value };
     });
   }, [grupos]);
+
+  const activeFilters = [filterStatus, filterObraId, filterCategoria].filter(Boolean).length;
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <AppLayout title="Cotações" subtitle={`${ativos.length} cotações ativas`}>
@@ -358,36 +381,62 @@ export default function Cotacoes() {
 
         {/* ── Analytics row ── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-2 rounded-xl p-5 bg-gradient-to-br from-[#052e16] to-[#14532d] shadow-card">
-            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center mb-4">
-              <TrendingDown className="w-5 h-5 text-green-300" />
-            </div>
-            <p className="font-body text-[10px] font-bold text-green-400 tracking-[0.15em] mb-1">ECONOMIA ACUMULADA</p>
-            <p className="font-body text-[10px] text-green-600 tracking-wide mb-3">TOTAL ACUMULADO DE NEGOCIAÇÕES</p>
-            <p className="font-display font-bold text-3xl text-white mb-3">{fmtCurrencyFull(economiaTotal)}</p>
-            {arquivados.length > 0 && (
-              <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1">
-                <TrendingUp className="w-3 h-3 text-green-300" />
-                <span className="font-body text-xs text-green-300 font-semibold">
-                  {arquivados.length} cotações fechadas
-                </span>
+
+          {/* Economia acumulada — usa o padrão mos-700 do sistema */}
+          <div className="lg:col-span-2 rounded-xl p-5 bg-gradient-to-br from-mos-800 to-mos-700 shadow-card relative overflow-hidden">
+            {/* Decorative circle */}
+            <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-4 w-20 h-20 rounded-full bg-white/5" />
+
+            <div className="relative">
+              <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center mb-4">
+                <TrendingDown className="w-5 h-5 text-white" />
               </div>
-            )}
+              <p className="font-body text-[10px] font-bold text-mos-200 tracking-[0.15em] mb-0.5">ECONOMIA ACUMULADA</p>
+              <p className="font-body text-[10px] text-mos-300 tracking-wide mb-4">TOTAL ACUMULADO DE NEGOCIAÇÕES</p>
+              <p className="font-display font-bold text-3xl text-white mb-4 leading-tight">
+                {fmtCurrencyFull(economiaTotal)}
+              </p>
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="font-body text-[9px] font-bold text-mos-300 tracking-wider mb-0.5">COTAÇÕES FECHADAS</p>
+                  <p className="font-data font-bold text-xl text-white">{arquivados.length}</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div>
+                  <p className="font-body text-[9px] font-bold text-mos-300 tracking-wider mb-0.5">COTAÇÕES ABERTAS</p>
+                  <p className="font-data font-bold text-xl text-white">{ativos.length}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
+          {/* Gráfico mensal */}
           <div className="lg:col-span-3 card p-5">
-            <div className="flex items-start justify-between mb-1">
+            <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="font-body text-[10px] font-bold text-text-tertiary tracking-[0.15em]">ECONOMIA MENSAL</p>
-                <p className="font-body text-[10px] text-text-disabled">HISTÓRICO DOS ÚLTIMOS 12 MESES</p>
+                <p className="font-body text-[10px] text-text-disabled mt-0.5">HISTÓRICO DOS ÚLTIMOS 12 MESES</p>
               </div>
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-2 font-body text-[10px] font-semibold text-text-tertiary">
-                <Calendar className="w-3 h-3" />
-                MENSAL
-              </span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-sm bg-mos-200" />
+                  <span className="font-body text-[9px] text-text-tertiary">Meses anteriores</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-sm bg-mos-700" />
+                  <span className="font-body text-[9px] text-text-tertiary">Mês atual</span>
+                </div>
+              </div>
             </div>
-            <div className="mt-4">
-              <MiniBarChart data={chartData} />
+            <MiniBarChart data={chartData} />
+            {/* Total do período */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-surface-2">
+              <div className="flex items-center gap-1.5">
+                <BarChart2 className="w-3.5 h-3.5 text-mos-700" />
+                <span className="font-body text-xs text-text-secondary font-semibold">Total no período</span>
+              </div>
+              <span className="font-data text-sm font-bold text-mos-700">{fmtCurrencyFull(economiaTotal)}</span>
             </div>
           </div>
         </div>
@@ -401,6 +450,11 @@ export default function Cotacoes() {
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-text-tertiary" />
               <span className="font-body text-xs font-bold text-text-secondary tracking-wider">PAINEL DE FILTROS</span>
+              {activeFilters > 0 && (
+                <span className="bg-mos-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {activeFilters}
+                </span>
+              )}
             </div>
             <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
           </button>
@@ -434,7 +488,10 @@ export default function Cotacoes() {
                   </select>
                 </div>
               </div>
-              <div className="flex justify-end mt-4">
+              <div className="flex items-center justify-between mt-4">
+                <span className="font-body text-xs text-text-tertiary">
+                  {filtered.length} resultado{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+                </span>
                 <button
                   onClick={() => { setFilterStatus(''); setFilterObraId(''); setFilterCategoria(''); }}
                   className="flex items-center gap-2 px-5 py-2 rounded-md bg-mos-700 text-white font-body text-sm font-medium hover:bg-mos-800 transition-colors"
