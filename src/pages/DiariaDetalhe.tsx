@@ -271,7 +271,7 @@ export default function DiariaDetalhe() {
                 </button>
               )}
               <button
-                onClick={() => window.print()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); requestAnimationFrame(() => window.print()); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-3 bg-white font-body text-sm font-semibold text-text-secondary hover:bg-surface-1 transition-colors"
               >
                 <Printer className="w-4 h-4" />
@@ -410,6 +410,7 @@ export default function DiariaDetalhe() {
                               >
                                 {present && <Check className="w-3.5 h-3.5" />}
                               </button>
+                              {present && <span className="print-day-mark">&#10003;</span>}
                             </td>
                           );
                         })}

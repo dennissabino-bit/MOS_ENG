@@ -162,11 +162,18 @@ h1, h2, h3, h4, h5, h6 {
   .diaria-print-table .col-dia    { width: 4%  !important; }
   .diaria-print-table .col-total  { width: 8%  !important; }
 
-  /* Day check cells: smaller */
+  /* Hide interactive buttons in day cells — replaced by text marker */
   .diaria-print-table .day-cell button {
-    width: 16px !important;
-    height: 16px !important;
-    border-radius: 2px !important;
+    display: none !important;
+  }
+
+  /* Show text dot for present days */
+  .print-day-mark {
+    display: block !important;
+    text-align: center;
+    font-size: 11px;
+    color: #1a1c1d;
+    line-height: 1;
   }
 
   /* Keep footer total row together */
@@ -177,6 +184,11 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Hidden on screen, visible only when printing */
 .print-only {
+  display: none;
+}
+
+/* Present-day marker: hidden on screen, block in print (via @media print above) */
+.print-day-mark {
   display: none;
 }
 
