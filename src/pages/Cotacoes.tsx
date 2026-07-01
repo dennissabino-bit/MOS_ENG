@@ -73,38 +73,38 @@ function ConfirmDeleteModal({
 function MiniBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div className="w-full">
-      <div className="flex items-end gap-1 h-24 w-full">
+    <div className="w-full flex-1 flex flex-col">
+      <div className="flex items-end gap-[3px] flex-1 min-h-[96px]">
         {data.map((d, i) => {
           const pct = (d.value / max) * 100;
           const isLast = i === data.length - 1;
           const hasValue = d.value > 0;
           return (
-            <div key={`${d.label}-${i}`} className="flex-1 flex flex-col items-center gap-1 group relative">
-              <div className="w-full flex items-end" style={{ height: '80px' }}>
-                <div
-                  title={`${d.label}: ${fmtCurrencyFull(d.value)}`}
-                  className={`w-full rounded-t-sm transition-all duration-500 ${
-                    isLast
-                      ? 'bg-mos-700'
-                      : hasValue
-                        ? 'bg-mos-200 group-hover:bg-mos-300'
-                        : 'bg-surface-2'
-                  }`}
-                  style={{ height: `${Math.max(pct, 3)}%` }}
-                />
-              </div>
+            <div key={`${d.label}-${i}`} className="flex-1 flex flex-col justify-end group relative h-full">
+              <div
+                title={`${d.label}: ${fmtCurrencyFull(d.value)}`}
+                className={`w-full rounded-t transition-all duration-500 ${
+                  isLast
+                    ? 'bg-mos-700'
+                    : hasValue
+                      ? 'bg-mos-300 group-hover:bg-mos-400'
+                      : 'bg-surface-3'
+                }`}
+                style={{ height: `${Math.max(pct, 3)}%` }}
+              />
             </div>
           );
         })}
       </div>
-      {/* X axis labels */}
-      <div className="flex items-start gap-1 mt-1.5">
+      {/* X axis labels — todos os 12 meses */}
+      <div className="flex items-start gap-[3px] mt-2">
         {data.map((d, i) => (
           <div key={`label-${i}`} className="flex-1 flex justify-center">
-            {(i === 0 || i === data.length - 1 || i === Math.floor((data.length - 1) / 2)) && (
-              <span className="font-data text-[9px] text-text-disabled capitalize">{d.label}</span>
-            )}
+            <span className={`font-data text-[8px] font-semibold capitalize leading-none ${
+              i === data.length - 1 ? 'text-mos-700' : 'text-text-secondary'
+            }`}>
+              {d.label.slice(0, 3)}
+            </span>
           </div>
         ))}
       </div>
@@ -380,10 +380,10 @@ export default function Cotacoes() {
         </div>
 
         {/* ── Analytics row ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
 
           {/* Economia acumulada — usa o padrão mos-700 do sistema */}
-          <div className="lg:col-span-2 rounded-xl p-5 bg-gradient-to-br from-mos-800 to-mos-700 shadow-card relative overflow-hidden">
+          <div className="lg:col-span-1 rounded-xl p-5 bg-gradient-to-br from-mos-800 to-mos-700 shadow-card relative overflow-hidden">
             {/* Decorative circle */}
             <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-4 w-20 h-20 rounded-full bg-white/5" />
@@ -412,24 +412,26 @@ export default function Cotacoes() {
           </div>
 
           {/* Gráfico mensal */}
-          <div className="lg:col-span-3 card p-5">
+          <div className="lg:col-span-3 card p-5 flex flex-col">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="font-body text-[10px] font-bold text-text-tertiary tracking-[0.15em]">ECONOMIA MENSAL</p>
-                <p className="font-body text-[10px] text-text-disabled mt-0.5">HISTÓRICO DOS ÚLTIMOS 12 MESES</p>
+                <p className="font-body text-[10px] font-bold text-text-secondary tracking-[0.15em]">ECONOMIA MENSAL</p>
+                <p className="font-body text-[10px] text-text-tertiary mt-0.5">HISTÓRICO DOS ÚLTIMOS 12 MESES</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-sm bg-mos-200" />
-                  <span className="font-body text-[9px] text-text-tertiary">Meses anteriores</span>
+                  <div className="w-2 h-2 rounded-sm bg-mos-300" />
+                  <span className="font-body text-[9px] font-semibold text-text-secondary">Meses anteriores</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-sm bg-mos-700" />
-                  <span className="font-body text-[9px] text-text-tertiary">Mês atual</span>
+                  <span className="font-body text-[9px] font-semibold text-text-secondary">Mês atual</span>
                 </div>
               </div>
             </div>
-            <MiniBarChart data={chartData} />
+            <div className="flex-1 min-h-[120px] flex flex-col">
+              <MiniBarChart data={chartData} />
+            </div>
             {/* Total do período */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-surface-2">
               <div className="flex items-center gap-1.5">
