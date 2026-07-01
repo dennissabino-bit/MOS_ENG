@@ -242,13 +242,13 @@ export default function Cotacoes() {
       supabase.from('cotacao_grupos')
         .select('*, obras(nome, codigo)')
         .order('created_at', { ascending: false }),
-      supabase.from('cotacao_itens').select('id, grupo_id'),
+      supabase.from('cotacao_itens').select('id, grupo_id, quantidade'),
       supabase.from('cotacao_propostas').select('grupo_id, fornecedor_id, item_id, preco_unitario'),
       supabase.from('obras').select('id, nome').order('nome'),
     ]);
 
     const rawGrupos = (gruposRes.data ?? []) as CotacaoGrupo[];
-    const itens     = (itensRes.data    ?? []) as { id: string; grupo_id: string }[];
+    const itens     = (itensRes.data    ?? []) as { id: string; grupo_id: string; quantidade: number }[];
     const props     = (propostasRes.data ?? []) as { grupo_id: string; fornecedor_id: string; item_id: string; preco_unitario: number | null }[];
 
     const winnerIds = [...new Set(rawGrupos.map(g => g.fornecedor_vencedor_id).filter(Boolean) as string[])];
@@ -266,7 +266,7 @@ export default function Cotacoes() {
       const fornTotals = fornIds.map(fid =>
         gItens.reduce((acc, item) => {
           const p = gProps.find(pr => pr.fornecedor_id === fid && pr.item_id === item.id);
-          return acc + (p?.preco_unitario ?? 0);
+          return acc + (p?.preco_unitario ?? 0) * (item.quantidade ?? 1);
         }, 0)
       ).filter(t => t > 0);
 
