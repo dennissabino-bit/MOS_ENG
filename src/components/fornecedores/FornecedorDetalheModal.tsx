@@ -1,4 +1,4 @@
-import { X, Building, Mail, Phone, Hash, Tag, MapPin, ToggleLeft, ToggleRight, Pencil, Star } from 'lucide-react';
+import { X, Building, Mail, Phone, Hash, Tag, MapPin, ToggleLeft, ToggleRight, Pencil, Star, CreditCard } from 'lucide-react';
 import type { Fornecedor } from '../../lib/database.types';
 import { formatCurrency } from '../../lib/formatters';
 
@@ -61,7 +61,7 @@ export function FornecedorDetalheModal({ fornecedor, cotacoesCount, volumeTotal,
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[70vh]">
           <div className="flex items-center gap-2">
             <span className={`inline-flex px-2.5 py-1 rounded text-xs font-body font-semibold ${
               isAtivo
@@ -102,6 +102,16 @@ export function FornecedorDetalheModal({ fornecedor, cotacoesCount, volumeTotal,
             />
             <InfoRow icon={<Phone className="w-4 h-4 text-text-tertiary" />} label="TELEFONE" value={<span className="font-data">{fornecedor.telefone || '—'}</span>} />
           </div>
+
+          {fornecedor.dados_bancarios && (
+            <div className="rounded-lg border border-surface-2 bg-surface-1 px-4 py-3 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-text-tertiary" />
+                <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-wider uppercase">Dados Bancários</p>
+              </div>
+              <p className="font-body text-sm text-text-primary whitespace-pre-wrap leading-relaxed">{fornecedor.dados_bancarios}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-surface-2 bg-surface-1">
