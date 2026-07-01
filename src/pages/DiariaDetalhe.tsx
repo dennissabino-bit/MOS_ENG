@@ -218,13 +218,38 @@ export default function DiariaDetalhe() {
       <div className="p-6 space-y-5 diaria-print-root">
 
         {/* ── Print-only header (hidden on screen) ── */}
-        <div className="print-only mb-4 border-b border-surface-3 pb-3">
-          <h1 className="font-display font-bold text-base text-text-primary leading-tight">{pageTitle}</h1>
-          <p className="font-body text-xs text-text-secondary mt-1">
-            {periodoLabel}
-            {planilha.localizacao ? ` · ${planilha.localizacao}` : ''}
-            {isAprovada && planilha.aprovada_em ? ` · Aprovada em ${fmtAprovadaEm(planilha.aprovada_em)}` : ''}
-          </p>
+        <div className="print-only">
+          <div className="prt-accent-bar" />
+
+          <div className="prt-header-row">
+            <div className="prt-brand">
+              <span className="prt-brand-mos">MOS</span>
+              <span className="prt-brand-engenharia">Engenharia</span>
+              <span className="prt-brand-sep">|</span>
+              <span className="prt-brand-gestor">Gestor de Obras</span>
+            </div>
+            <div className="prt-doc-meta">
+              <span className="prt-doc-type">Controle de Diárias</span>
+              <span className="prt-doc-date">
+                Emitido em {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+
+          <div className="prt-title-row">
+            <h1 className="prt-title">{pageTitle}</h1>
+            <div className="prt-chips">
+              <span className="prt-chip prt-chip-primary">{periodoLabel}</span>
+              {planilha.localizacao && (
+                <span className="prt-chip prt-chip-neutral">{planilha.localizacao}</span>
+              )}
+              {isAprovada && planilha.aprovada_em ? (
+                <span className="prt-chip prt-chip-success">Aprovada em {fmtAprovadaEm(planilha.aprovada_em)}</span>
+              ) : (
+                <span className="prt-chip prt-chip-warning">Pendente de aprovação</span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ── Header ── */}
@@ -351,7 +376,7 @@ export default function DiariaDetalhe() {
             <div className="overflow-x-auto diaria-print-table-wrap">
               <table className="w-full border-collapse diaria-print-table" style={{ minWidth: '960px' }}>
                 <thead>
-                  <tr className="bg-surface-2 border-b border-surface-3">
+                  <tr className="prt-thead">
                     <th className="col-nome text-left px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-36">
                       Nome
                     </th>
@@ -363,10 +388,8 @@ export default function DiariaDetalhe() {
                     </th>
                     {days.map(d => (
                       <th key={d.slot} className="col-dia text-center py-2 w-10">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="font-data text-xs font-bold text-text-primary">{d.calendarDay}</span>
-                          <span className="font-body text-[8px] font-semibold text-text-tertiary">{d.weekday}</span>
-                        </div>
+                        <span className="prt-th-day-num">{d.calendarDay}</span>
+                        <span className="prt-th-day-wk">{d.weekday}</span>
                       </th>
                     ))}
                     <th className="col-total text-right px-4 py-3 font-body text-[9px] font-bold text-text-tertiary tracking-[0.14em] uppercase w-28">
@@ -397,8 +420,12 @@ export default function DiariaDetalhe() {
                           const key = presKey(f.id, d.slot);
                           const present = presencas.has(key);
                           const busy = toggling.has(key);
+                          const isWeekend = d.weekday === 'SAB' || d.weekday === 'DOM';
                           return (
-                            <td key={d.slot} className="col-dia day-cell py-2 text-center">
+                            <td
+                              key={d.slot}
+                              className={`col-dia day-cell py-2 text-center ${present ? 'prt-day-present' : isWeekend ? 'prt-day-weekend' : ''}`}
+                            >
                               <button
                                 onClick={() => togglePresenca(f.id, d.slot)}
                                 disabled={isAprovada || busy}
@@ -414,7 +441,7 @@ export default function DiariaDetalhe() {
                             </td>
                           );
                         })}
-                        <td className="col-total px-4 py-3 text-right">
+                        <td className="col-total prt-col-total px-4 py-3 text-right">
                           <span className="font-data text-sm font-bold text-mos-700">
                             {formatCurrencyFull(rowData?.total ?? 0)}
                           </span>
@@ -424,14 +451,14 @@ export default function DiariaDetalhe() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-surface-1 border-t-2 border-surface-3">
+                  <tr className="prt-tfoot-row bg-surface-1 border-t-2 border-surface-3">
                     <td colSpan={3 + days.length} className="px-4 py-4 text-right">
-                      <span className="font-body text-xs font-bold text-text-tertiary tracking-widest uppercase">
+                      <span className="prt-tfoot-label font-body text-xs font-bold text-text-tertiary tracking-widest uppercase">
                         Total Consolidado da Quinzena
                       </span>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <span className="font-data text-base font-bold text-mos-700">
+                      <span className="prt-tfoot-value font-data text-base font-bold text-mos-700">
                         {formatCurrencyFull(totalQuinzena)}
                       </span>
                     </td>
@@ -442,12 +469,22 @@ export default function DiariaDetalhe() {
           )}
         </div>
 
-        {/* ── Footer ── */}
+        {/* ── Footer (screen) ── */}
         {isAprovada && planilha.aprovada_em && (
-          <p className="text-center font-body text-xs text-text-tertiary py-2">
+          <p className="text-center font-body text-xs text-text-tertiary py-2 print-hide">
             Aprovada em {fmtAprovadaEm(planilha.aprovada_em)}
           </p>
         )}
+
+        {/* ── Print document footer ── */}
+        <div className="prt-footer">
+          <span className="prt-footer-left">
+            {isAprovada && planilha.aprovada_em
+              ? `Aprovada em ${fmtAprovadaEm(planilha.aprovada_em)} · Documento oficial — não requer assinatura adicional`
+              : 'Planilha pendente de aprovação'}
+          </span>
+          <span className="prt-footer-right">MOS Engenharia — Gestor de Obras</span>
+        </div>
       </div>
 
       {showAddFunc && (

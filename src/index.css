@@ -95,51 +95,144 @@ h1, h2, h3, h4, h5, h6 {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 10mm 12mm;
+    margin: 8mm 10mm;
   }
 
-  /* Hide everything that isn't the print content */
-  .print-hide,
-  nav,
-  aside,
-  header {
-    display: none !important;
-  }
-
-  /* Reset page layout so content fills the sheet */
-  html, body, #root {
-    background: white !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Remove the app shell constraints */
+  /* ── Layout reset ── */
+  .print-hide, nav, aside, header { display: none !important; }
+  html, body, #root { background: white !important; overflow: visible !important; height: auto !important; }
   .flex.h-screen { display: block !important; height: auto !important; }
   .flex-1.flex.flex-col { display: block !important; overflow: visible !important; }
   main { overflow: visible !important; height: auto !important; }
+  .card { box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+  .diaria-print-root { padding: 0 !important; }
+  .print-only { display: block !important; }
 
-  /* Remove card shadows / borders so print looks clean */
-  .card {
-    box-shadow: none !important;
-    border: 1px solid #e8e8e8 !important;
-    border-radius: 0 !important;
+  /* ── Top accent bar ── */
+  .prt-accent-bar {
+    height: 5px;
+    background: #610000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    margin-bottom: 7px;
   }
 
-  /* The main page wrapper */
-  .diaria-print-root {
-    padding: 0 !important;
+  /* ── Company / doc meta row ── */
+  .prt-header-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 5px;
   }
 
-  /* Show the print-only header */
-  .print-only {
-    display: block !important;
+  .prt-brand {
+    display: flex !important;
+    align-items: baseline;
+    gap: 5px;
   }
 
-  /* Presence table: fill width, fixed layout, compact */
-  .diaria-print-table-wrap {
-    overflow: visible !important;
-    width: 100% !important;
+  .prt-brand-mos {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: #610000 !important;
+    letter-spacing: -0.5px;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
+
+  .prt-brand-engenharia {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    font-size: 9px;
+    color: #610000 !important;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-brand-sep { font-size: 10px; color: #ccc; margin: 0 3px; }
+
+  .prt-brand-gestor {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 8.5px;
+    color: #8c9196;
+    letter-spacing: 0.3px;
+  }
+
+  .prt-doc-meta {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .prt-doc-type {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 7.5px;
+    color: #8c9196;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .prt-doc-date {
+    font-family: 'Inter', sans-serif;
+    font-size: 7.5px;
+    color: #b8bcc0;
+  }
+
+  /* ── Title + chips row ── */
+  .prt-title-row {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .prt-title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: #1a1c1d;
+    margin: 0;
+    line-height: 1.2;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .prt-chips {
+    display: flex !important;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .prt-chip {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 7.5px;
+    letter-spacing: 0.4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-chip-primary  { background: #610000 !important; color: white !important; }
+  .prt-chip-neutral  { background: #f0f0f0 !important; color: #5a5f63 !important; border: 1px solid #ddd; }
+  .prt-chip-success  { background: #dcfce7 !important; color: #15803d !important; border: 1px solid #bbf7d0; }
+  .prt-chip-warning  { background: #fef3c7 !important; color: #b45309 !important; border: 1px solid #fde68a; }
+
+  /* ── Table wrapper ── */
+  .diaria-print-table-wrap { overflow: visible !important; width: 100% !important; }
 
   .diaria-print-table {
     min-width: 0 !important;
@@ -147,48 +240,173 @@ h1, h2, h3, h4, h5, h6 {
     table-layout: fixed !important;
     font-size: 9px !important;
     border-collapse: collapse !important;
+    border: 1px solid #ddd !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Column widths */
+  .diaria-print-table .col-nome   { width: 15% !important; }
+  .diaria-print-table .col-funcao { width: 10% !important; }
+  .diaria-print-table .col-valor  { width: 7%  !important; }
+  .diaria-print-table .col-dia    { width: 4%  !important; }
+  .diaria-print-table .col-total  { width: 8%  !important; }
+
+  /* ── thead: dark brand red ── */
+  .prt-thead {
+    background: #610000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-thead th {
+    background: #610000 !important;
+    color: white !important;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 7.5px !important;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 4px !important;
+    border-right: 1px solid rgba(255,255,255,0.12) !important;
+    border-bottom: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-th-day-num {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    color: white !important;
+    line-height: 1.1;
+  }
+
+  .prt-th-day-wk {
+    display: block;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 6.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65) !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── tbody: alternating rows ── */
+  .diaria-print-table tbody tr {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .diaria-print-table th,
   .diaria-print-table td {
-    padding: 4px 3px !important;
+    padding: 5px 4px !important;
+    border-bottom: 1px solid #ebebeb !important;
+    border-right: 1px solid #f0f0f0 !important;
     overflow: hidden !important;
   }
 
-  /* Column width distribution across landscape A4 (~277mm usable) */
-  .diaria-print-table .col-nome   { width: 16% !important; }
-  .diaria-print-table .col-funcao { width: 11% !important; }
-  .diaria-print-table .col-valor  { width: 8%  !important; }
-  .diaria-print-table .col-dia    { width: 4%  !important; }
-  .diaria-print-table .col-total  { width: 8%  !important; }
-
-  /* Hide interactive buttons in day cells — replaced by text marker */
-  .diaria-print-table .day-cell button {
-    display: none !important;
+  /* ── Weekend column tint ── */
+  .prt-day-weekend {
+    background: #f5f5f5 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  /* Show text dot for present days */
-  .print-day-mark {
+  /* ── Present cell: solid green ── */
+  .prt-day-present {
+    background: #16a34a !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-day-present .print-day-mark {
     display: block !important;
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
     text-align: center;
-    font-size: 11px;
-    color: #1a1c1d;
-    line-height: 1;
+    line-height: 1.5;
   }
 
-  /* Keep footer total row together */
-  tfoot tr {
-    page-break-inside: avoid !important;
+  /* Hide toggle buttons entirely in print */
+  .diaria-print-table .day-cell button { display: none !important; }
+
+  /* Non-present mark: stays hidden */
+  .print-day-mark { display: none; }
+
+  /* ── Total column highlight ── */
+  .prt-col-total {
+    background: #fff8f0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
+
+  /* ── tfoot: dark brand red ── */
+  .prt-tfoot-row {
+    background: #610000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-tfoot-row td {
+    background: #610000 !important;
+    color: white !important;
+    border-bottom: none !important;
+    border-right: none !important;
+    padding: 8px 4px !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .prt-tfoot-label {
+    font-family: 'Work Sans', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 7.5px !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.75) !important;
+  }
+
+  .prt-tfoot-value {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 13px !important;
+    color: white !important;
+  }
+
+  /* ── Document footer ── */
+  .prt-footer {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .prt-footer-left {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 7.5px;
+    color: #aaa;
+    font-style: italic;
+  }
+
+  .prt-footer-right {
+    font-family: 'Inter', sans-serif;
+    font-size: 7.5px;
+    color: #ccc;
+  }
+
+  tfoot tr { page-break-inside: avoid !important; }
 }
 
 /* Hidden on screen, visible only when printing */
-.print-only {
-  display: none;
-}
-
-/* Present-day marker: hidden on screen, block in print (via @media print above) */
-.print-day-mark {
-  display: none;
-}
+.print-only  { display: none; }
+.print-day-mark { display: none; }
+.prt-accent-bar,
+.prt-header-row,
+.prt-title-row,
+.prt-footer { display: none; }
 
