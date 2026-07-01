@@ -1,6 +1,6 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, DoorOpen, Zap, Users, FileText, LogOut,
+  LayoutDashboard, Building2, DoorOpen, Zap, Users, FileText,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
@@ -29,17 +29,11 @@ const ENERGIA_TABS: TabDef[] = [
 ];
 
 function EnergiaTabsBar() {
-  const { user, isAdmin, logout } = useEnergiaAuth();
+  const { user, isAdmin } = useEnergiaAuth();
   const { pendentes } = usePendencias(user, isAdmin);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const visible = ENERGIA_TABS.filter(t => !t.adminOnly || isAdmin);
-
-  function handleLogout() {
-    logout();
-    navigate('/energia/login');
-  }
 
   return (
     <div className="sticky top-0 z-10 bg-surface-0 border-b border-surface-2 flex items-center">
@@ -72,16 +66,6 @@ function EnergiaTabsBar() {
           );
         })}
       </div>
-
-      {/* Logout Energia */}
-      <button
-        onClick={handleLogout}
-        title="Sair do módulo Energia"
-        className="flex items-center gap-1.5 px-3 py-2 mx-2 rounded-lg font-body text-xs text-text-tertiary hover:text-status-error hover:bg-surface-2 transition-colors flex-shrink-0"
-      >
-        <LogOut className="w-3.5 h-3.5" strokeWidth={1.8} />
-        Sair
-      </button>
     </div>
   );
 }
