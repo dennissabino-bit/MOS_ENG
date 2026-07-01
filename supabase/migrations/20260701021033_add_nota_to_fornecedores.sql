@@ -1,0 +1,1 @@
+ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS nota NUMERIC(2,1) CHECK (nota >= 1.0 AND nota <= 5.0);

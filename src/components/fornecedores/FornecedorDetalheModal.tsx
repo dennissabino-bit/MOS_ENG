@@ -1,8 +1,11 @@
-import { X, Building, Mail, Phone, Hash, Tag, MapPin, ToggleLeft, ToggleRight, Pencil } from 'lucide-react';
+import { X, Building, Mail, Phone, Hash, Tag, MapPin, ToggleLeft, ToggleRight, Pencil, Star } from 'lucide-react';
 import type { Fornecedor } from '../../lib/database.types';
+import { formatCurrency } from '../../lib/formatters';
 
 interface FornecedorDetalheModalProps {
   fornecedor: Fornecedor;
+  cotacoesCount: number;
+  volumeTotal: number;
   onClose: () => void;
   onToggleStatus?: (id: string, status: 'ativo' | 'inativo') => void;
   onEdit?: () => void;
@@ -22,7 +25,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus, onEdit }: FornecedorDetalheModalProps) {
+export function FornecedorDetalheModal({ fornecedor, cotacoesCount, volumeTotal, onClose, onToggleStatus, onEdit }: FornecedorDetalheModalProps) {
   const isAtivo = fornecedor.status === 'ativo';
   const localizacao = [fornecedor.cidade, fornecedor.estado].filter(Boolean).join(', ');
 
@@ -37,7 +40,17 @@ export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus, on
               <Building className="w-4 h-4 text-text-tertiary" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-sm text-text-primary leading-snug">{fornecedor.nome}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-bold text-sm text-text-primary leading-snug">{fornecedor.nome}</h2>
+                {fornecedor.nota != null && (
+                  <span className="flex items-center gap-0.5">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span className="font-data text-xs font-semibold text-status-success">
+                      {Number(fornecedor.nota) % 1 === 0 ? fornecedor.nota : Number(fornecedor.nota).toFixed(1)}
+                    </span>
+                  </span>
+                )}
+              </div>
               <p className="font-body text-xs text-text-tertiary mt-0.5">
                 {localizacao || 'Detalhes do fornecedor'}
               </p>
@@ -59,12 +72,24 @@ export function FornecedorDetalheModal({ fornecedor, onClose, onToggleStatus, on
             </span>
           </div>
 
+          <div className="flex items-stretch rounded-lg bg-surface-1 overflow-hidden">
+            <div className="flex-1 px-4 py-3">
+              <p className="font-body text-[9px] font-semibold text-text-disabled tracking-wider uppercase mb-0.5">Cotacoes</p>
+              <p className="font-data text-base font-bold text-text-primary">{cotacoesCount}</p>
+            </div>
+            <div className="w-px bg-surface-2" />
+            <div className="flex-1 px-4 py-3">
+              <p className="font-body text-[9px] font-semibold text-text-disabled tracking-wider uppercase mb-0.5">Volume Total</p>
+              <p className="font-data text-base font-bold text-text-primary">{formatCurrency(volumeTotal)}</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 pt-1">
             <InfoRow icon={<Tag className="w-4 h-4 text-text-tertiary" />} label="CATEGORIA" value={fornecedor.categoria} />
             {localizacao && (
               <InfoRow
                 icon={<MapPin className="w-4 h-4 text-text-tertiary" />}
-                label="LOCALIZAÇÃO"
+                label="LOCALIZACAO"
                 value={<span className="font-data">{localizacao}</span>}
               />
             )}

@@ -39,6 +39,7 @@ export interface Fornecedor {
   telefone: string;
   cidade?: string;
   estado?: string;
+  nota?: number | null;
   created_at: string;
 }
 

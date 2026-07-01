@@ -20,6 +20,7 @@ interface FormState {
   cidade: string;
   estado: string;
   status: 'ativo' | 'inativo';
+  nota: string;
 }
 
 const inputClass = 'w-full rounded-md border border-surface-3 px-3 py-2 font-data text-sm text-text-primary focus:outline-none focus:border-mos-700 transition-colors bg-white';
@@ -35,6 +36,7 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
     cidade: fornecedor.cidade ?? '',
     estado: fornecedor.estado ?? '',
     status: fornecedor.status as 'ativo' | 'inativo',
+    nota: fornecedor.nota != null ? String(fornecedor.nota) : '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
       cidade: form.cidade.trim() || null,
       estado: form.estado || null,
       status: form.status,
+      nota: form.nota !== '' ? parseFloat(form.nota) : null,
     };
 
     const { data, error: err } = await supabase
@@ -134,6 +137,20 @@ export function EditarFornecedorModal({ fornecedor, onClose, onSaved }: EditarFo
           <div>
             <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">CNPJ</label>
             <input className={inputClass} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={e => set('cnpj', e.target.value)} />
+          </div>
+
+          <div>
+            <label className="font-body text-xs font-semibold text-text-secondary mb-1 block">Avaliacao (1.0 – 5.0)</label>
+            <input
+              type="number"
+              min="1"
+              max="5"
+              step="0.1"
+              className={inputClass}
+              placeholder="Ex: 4.5"
+              value={form.nota}
+              onChange={e => set('nota', e.target.value)}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
