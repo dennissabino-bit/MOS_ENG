@@ -16,7 +16,8 @@ interface FornecedorStats {
 
 const PAGE_SIZE_OPTIONS = [9, 18, 27];
 
-export default function Fornecedores() {
+// Exportado para reuso no módulo Configurações
+export function FornecedoresContent() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [stats, setStats] = useState<Record<string, FornecedorStats>>({});
   const [tab, setTab] = useState<'ativos' | 'arquivados'>('ativos');
@@ -30,9 +31,7 @@ export default function Fornecedores() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   async function fetchAll() {
     setLoading(true);
@@ -47,18 +46,15 @@ export default function Fornecedores() {
 
     const propostas = (propostasRes.data ?? []) as { fornecedor_id: string; item_id: string; preco_unitario: number | null }[];
     const itens = (itensRes.data ?? []) as { id: string; quantidade: number }[];
-
     const itensMap = Object.fromEntries(itens.map(i => [i.id, i.quantidade]));
 
     const statsMap: Record<string, FornecedorStats> = {};
     for (const f of fornList) {
       const fProps = propostas.filter(p => p.fornecedor_id === f.id);
-      const cotacoesCount = fProps.length;
-      const volumeTotal = fProps.reduce((acc, p) => {
-        const qtd = itensMap[p.item_id] ?? 1;
-        return acc + (p.preco_unitario ?? 0) * qtd;
-      }, 0);
-      statsMap[f.id] = { cotacoesCount, volumeTotal };
+      statsMap[f.id] = {
+        cotacoesCount: fProps.length,
+        volumeTotal: fProps.reduce((acc, p) => acc + (p.preco_unitario ?? 0) * (itensMap[p.item_id] ?? 1), 0),
+      };
     }
     setStats(statsMap);
     setLoading(false);
@@ -77,8 +73,6 @@ export default function Fornecedores() {
       .forEach(f => { if (f.cidade) set.add(f.cidade); });
     return [...set].sort();
   }, [fornecedores, estadoFilter]);
-
-  const ativos = fornecedores.filter(f => f.status === 'ativo');
 
   const filtered = useMemo(() => {
     const base = tab === 'ativos'
@@ -119,12 +113,8 @@ export default function Fornecedores() {
     await supabase.from('fornecedores').update({ status }).eq('id', id);
   }
 
-  const subtitle = loading
-    ? 'Carregando...'
-    : `${ativos.length} fornecedor${ativos.length !== 1 ? 'es' : ''} ativo${ativos.length !== 1 ? 's' : ''}`;
-
   return (
-    <AppLayout title="Fornecedores" subtitle={subtitle}>
+    <>
       <div className="p-6 space-y-5">
         {/* Header: tabs + button */}
         <div className="flex items-center justify-between gap-4">
@@ -237,7 +227,7 @@ export default function Fornecedores() {
         {!loading && filtered.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
             <div className="flex items-center gap-2">
-              <span className="font-body text-xs text-text-tertiary">Linhas por pagina:</span>
+              <span className="font-body text-xs text-text-tertiary">Linhas por página:</span>
               <select
                 value={pageSize}
                 onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
@@ -279,7 +269,7 @@ export default function Fornecedores() {
                 disabled={page === totalPages}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-md font-body text-sm text-text-secondary border border-surface-2 hover:bg-surface-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Proximo
+                Próximo
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -293,7 +283,6 @@ export default function Fornecedores() {
           onSaved={handleSaved}
         />
       )}
-
       {selectedFornecedor && (
         <FornecedorDetalheModal
           fornecedor={selectedFornecedor}
@@ -304,7 +293,6 @@ export default function Fornecedores() {
           onEdit={() => setEditingFornecedor(selectedFornecedor)}
         />
       )}
-
       {editingFornecedor && (
         <EditarFornecedorModal
           fornecedor={editingFornecedor}
@@ -312,6 +300,14 @@ export default function Fornecedores() {
           onSaved={item => { handleUpdated(item); setEditingFornecedor(null); }}
         />
       )}
+    </>
+  );
+}
+
+export default function Fornecedores() {
+  return (
+    <AppLayout title="Fornecedores" subtitle="Cadastro de fornecedores e parceiros">
+      <FornecedoresContent />
     </AppLayout>
   );
 }
