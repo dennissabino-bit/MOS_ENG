@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DoorOpen, Search, Building2, ChevronRight, Plus, Tag, Archive, ArchiveRestore, X, ChevronDown, SplitSquareVertical } from 'lucide-react';
+import { DoorOpen, Search, Building2, ChevronRight, Plus, Tag, Archive, ChevronDown, SplitSquareVertical } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaSalaModal } from '../components/NovaSalaModal';
 import { TiposSalaModal } from '../components/TiposSalaModal';
@@ -24,7 +24,6 @@ export default function Salas() {
   const [showModal, setShowModal] = useState(false);
   const [showTiposModal, setShowTiposModal] = useState(false);
   const [unidadeIdParaSala, setUnidadeIdParaSala] = useState('');
-  const [showArquivadasDrawer, setShowArquivadasDrawer] = useState(false);
   const [filterUnidadeId, setFilterUnidadeId] = useState('');
   const [filterCidade, setFilterCidade] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
@@ -64,7 +63,6 @@ export default function Salas() {
   }, [unidades]);
 
   const ativas = salas.filter(s => !s.arquivada);
-  const arquivadas = salas.filter(s => s.arquivada);
 
   const filtered = ativas.filter(s => {
     const unidade = unidadeMap.get(s.unidade_id);
@@ -99,11 +97,6 @@ export default function Salas() {
     setSalas(prev => prev.map(s => s.id === sala.id ? { ...s, ativo: !s.ativo } : s));
   }
 
-  async function handleRestaurar(sala: EnergiaSala) {
-    await supabase.from('energia_salas').update({ arquivada: false }).eq('id', sala.id);
-    setSalas(prev => prev.map(s => s.id === sala.id ? { ...s, arquivada: false } : s));
-  }
-
   function handleNovaSala() {
     const defaultUnidade = !isAdmin && user?.unidade_id ? user.unidade_id : (unidades[0]?.id ?? '');
     setUnidadeIdParaSala(defaultUnidade);
@@ -125,18 +118,6 @@ export default function Salas() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {arquivadas.length > 0 && (
-                <button
-                  onClick={() => setShowArquivadasDrawer(true)}
-                  className="relative flex items-center gap-1.5 px-3 py-1.5 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-secondary hover:bg-surface-2 transition-colors shadow-card"
-                >
-                  <Archive className="w-3.5 h-3.5" />
-                  Arquivadas
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-text-primary text-white font-data text-[10px] font-bold leading-none">
-                    {arquivadas.length}
-                  </span>
-                </button>
-              )}
               {isAdmin && (
                 <button
                   onClick={() => setShowTiposModal(true)}
@@ -334,69 +315,6 @@ export default function Salas() {
         <Plus className="w-4 h-4" strokeWidth={2.5} />
         Nova Sala
       </button>
-
-      {/* Arquivadas drawer */}
-      {showArquivadasDrawer && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowArquivadasDrawer(false)} />
-          <div className="relative bg-surface-0 w-full sm:w-[440px] sm:h-full flex flex-col shadow-modal rounded-t-2xl sm:rounded-none sm:rounded-l-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-2 flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
-                  <Archive className="w-4 h-4 text-text-secondary" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-base text-text-primary">Salas Arquivadas</h3>
-                  <p className="font-body text-xs text-text-tertiary">{arquivadas.length} sala{arquivadas.length !== 1 ? 's' : ''} arquivada{arquivadas.length !== 1 ? 's' : ''}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowArquivadasDrawer(false)} className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors">
-                <X className="w-4 h-4 text-text-tertiary" />
-              </button>
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-surface-2">
-              {arquivadas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-20 gap-3">
-                  <Archive className="w-10 h-10 text-text-disabled" />
-                  <p className="font-body text-sm text-text-tertiary">Nenhuma sala arquivada</p>
-                </div>
-              ) : (
-                arquivadas.map(sala => (
-                  <div key={sala.id} className="flex items-center justify-between px-5 py-4 hover:bg-surface-1 transition-colors group">
-                    <div
-                      className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
-                      onClick={() => { setShowArquivadasDrawer(false); navigate(`/energia/salas/${sala.id}`); }}
-                    >
-                      <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center flex-shrink-0">
-                        <DoorOpen className="w-4 h-4 text-text-disabled" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-body font-medium text-sm text-text-secondary truncate">{sala.nome}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="font-body text-xs text-text-tertiary">{getLabel(sala.tipo_sala)}</span>
-                          <span className="flex items-center gap-1 font-body text-xs text-text-tertiary">
-                            <Building2 className="w-3 h-3" />{unidadeNomeMap.get(sala.unidade_id) || '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleRestaurar(sala)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-body text-sm font-semibold text-text-secondary bg-surface-1 hover:bg-surface-2 border border-surface-3 transition-colors flex-shrink-0 ml-3"
-                    >
-                      <ArchiveRestore className="w-3.5 h-3.5" />
-                      Restaurar
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {showModal && unidadeIdParaSala && (
         <NovaSalaModal
