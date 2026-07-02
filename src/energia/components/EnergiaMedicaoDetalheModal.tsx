@@ -4,6 +4,7 @@ import type { EnergiaMedicao, EnergiaSala, EnergiaUnidade, EnergiaMedicaoStatus 
 import { MEDICAO_STATUS_CONFIG, MESES_ABREV } from '../types';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatKWh } from '../utils/calculos';
+import { gerarFaturaAutomatica } from '../utils/gerarFaturaAutomatica';
 
 interface Props {
   medicao: EnergiaMedicao;
@@ -57,6 +58,7 @@ function StatusPipeline({ current }: { current: EnergiaMedicaoStatus }) {
 export function EnergiaMedicaoDetalheModal({ medicao, sala, unidade, onClose, onStatusChanged }: Props) {
   const [lightbox, setLightbox] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [faturaToast, setFaturaToast] = useState<{ msg: string; criada: boolean } | null>(null);
 
   const currentIdx = STATUS_ORDER.indexOf(medicao.status);
   const nextStatus = currentIdx < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentIdx + 1] : null;
@@ -71,10 +73,31 @@ export function EnergiaMedicaoDetalheModal({ medicao, sala, unidade, onClose, on
       .eq('id', medicao.id)
       .select()
       .single();
-    setSavingStatus(false);
     if (!error && data) {
-      onStatusChanged(data as EnergiaMedicao);
+      const updated = data as EnergiaMedicao;
+      onStatusChanged(updated);
+      // Auto-generate fatura when advancing to 'aprovado'
+      if (nextStatus === 'aprovado' && sala) {
+        try {
+          const result = await gerarFaturaAutomatica(updated, sala);
+          const competencia = `${MESES_ABREV[updated.mes - 1]}/${updated.ano}`;
+          setFaturaToast({
+            msg: result.criada
+              ? `Fatura de ${competencia} gerada automaticamente.`
+              : `Medição adicionada à fatura de ${competencia}.`,
+            criada: result.criada,
+          });
+          setTimeout(() => { setFaturaToast(null); onClose(); }, 2200);
+          setSavingStatus(false);
+          return;
+        } catch {
+          // fatura generation failed silently — still advance the status
+        }
+      }
+      setSavingStatus(false);
       onClose();
+    } else {
+      setSavingStatus(false);
     }
   }
 
@@ -196,17 +219,21 @@ export function EnergiaMedicaoDetalheModal({ medicao, sala, unidade, onClose, on
             <button onClick={onClose} className="px-5 py-2 rounded-md border border-surface-3 font-body text-sm text-text-secondary hover:bg-surface-2 transition-colors">
               Fechar
             </button>
-            {nextStatus && nextCfg && (
+            {faturaToast ? (
+              <span className={`flex items-center gap-2 font-body text-sm font-medium px-4 py-2 rounded-lg ${faturaToast.criada ? 'bg-status-successLight text-status-success' : 'bg-blue-50 text-blue-600'}`}>
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                {faturaToast.msg}
+              </span>
+            ) : nextStatus && nextCfg ? (
               <button
                 onClick={handleAdvance}
                 disabled={savingStatus}
                 className={`flex items-center gap-2 px-5 py-2 rounded-md font-body text-sm font-medium transition-colors disabled:opacity-50 border ${nextCfg.bg} ${nextCfg.text} ${nextCfg.border} hover:brightness-95`}
               >
                 {savingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                Avançar para {nextCfg.label}
+                {savingStatus && nextStatus === 'aprovado' ? 'Gerando fatura…' : `Avançar para ${nextCfg.label}`}
               </button>
-            )}
-            {!nextStatus && (
+            ) : (
               <span className="flex items-center gap-1.5 font-body text-sm text-status-success font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 Ciclo concluído

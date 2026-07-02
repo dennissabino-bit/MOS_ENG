@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Receipt, Plus, Search, ChevronDown, Building2, CheckCircle2,
-  TrendingDown, Clock, AlertTriangle, FileText, Trash2,
+  TrendingDown, Clock, AlertTriangle, FileText, Trash2, Zap, Loader2,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaFaturaModal } from '../components/NovaFaturaModal';
@@ -9,7 +9,8 @@ import { FaturaDetalheModal } from '../components/FaturaDetalheModal';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatMesAno, getAnoAtual, getMesAtual } from '../utils/calculos';
-import type { EnergiaUnidade, EnergiaFatura, EnergiaFaturaStatus } from '../types';
+import { gerarFaturaAutomatica } from '../utils/gerarFaturaAutomatica';
+import type { EnergiaUnidade, EnergiaFatura, EnergiaFaturaStatus, EnergiaMedicao, EnergiaSala } from '../types';
 import { FATURA_STATUS_CONFIG } from '../types';
 
 const MESES_OPTS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -32,7 +33,11 @@ export default function Faturas() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { fetchData(); }, [isAdmin, user]);
+  const [orphanedMedicoes, setOrphanedMedicoes] = useState<EnergiaMedicao[]>([]);
+  const [processingBatch, setProcessingBatch] = useState(false);
+  const [batchResult, setBatchResult] = useState<string | null>(null);
+
+  useEffect(() => { fetchData(); fetchOrphaned(); }, [isAdmin, user]);
 
   async function fetchData() {
     setLoading(true);
@@ -49,6 +54,52 @@ export default function Faturas() {
     setFaturas((fRes.data as EnergiaFatura[]) || []);
     if (!isAdmin && user?.unidade_id) setFilterUnidadeId(user.unidade_id);
     setLoading(false);
+  }
+
+  async function fetchOrphaned() {
+    // Medicoes approved but without fatura_id
+    let q = supabase
+      .from('energia_medicoes')
+      .select('*')
+      .eq('status', 'aprovado')
+      .is('fatura_id', null);
+    if (!isAdmin && user?.unidade_id) {
+      // Filter by sala's unidade — we'll do client-side filtering after fetching salas
+    }
+    const { data } = await q;
+    setOrphanedMedicoes((data as EnergiaMedicao[]) || []);
+  }
+
+  async function handleProcessBatch() {
+    if (orphanedMedicoes.length === 0) return;
+    setProcessingBatch(true);
+    setBatchResult(null);
+
+    // Fetch all salas needed
+    const salaIds = [...new Set(orphanedMedicoes.map(m => m.sala_id))];
+    const { data: salasData } = await supabase
+      .from('energia_salas')
+      .select('*')
+      .in('id', salaIds);
+    const salaMap = new Map(((salasData as EnergiaSala[]) || []).map(s => [s.id, s]));
+
+    let ok = 0;
+    let fail = 0;
+    for (const medicao of orphanedMedicoes) {
+      const sala = salaMap.get(medicao.sala_id);
+      if (!sala) { fail++; continue; }
+      try {
+        await gerarFaturaAutomatica(medicao, sala);
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setProcessingBatch(false);
+    setBatchResult(`${ok} fatura(s) gerada(s)${fail > 0 ? `, ${fail} com erro` : ''}.`);
+    setTimeout(() => setBatchResult(null), 4000);
+    setOrphanedMedicoes([]);
+    fetchData();
   }
 
   const unidadeMap = useMemo(() => new Map(unidades.map(u => [u.id, u])), [unidades]);
@@ -159,6 +210,33 @@ export default function Faturas() {
             <p className="font-body text-[10px] text-text-disabled mt-0.5">em elaboração</p>
           </div>
         </div>
+
+        {/* Batch recovery banner */}
+        {(orphanedMedicoes.length > 0 || batchResult) && (
+          <div className={`flex items-center gap-3 px-5 py-3 rounded-xl border ${batchResult ? 'bg-status-successLight border-status-success/30' : 'bg-status-warningLight border-status-warning/30'}`}>
+            {batchResult ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-status-success flex-shrink-0" />
+                <p className="font-body text-sm text-status-success font-medium flex-1">{batchResult}</p>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 text-status-warning flex-shrink-0" />
+                <p className="font-body text-sm text-status-warning font-medium flex-1">
+                  {orphanedMedicoes.length} medição{orphanedMedicoes.length > 1 ? 'ões aprovadas' : ' aprovada'} sem fatura vinculada.
+                </p>
+                <button
+                  onClick={handleProcessBatch}
+                  disabled={processingBatch}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-status-warning text-white font-body text-xs font-semibold hover:bg-status-warning/90 transition-colors disabled:opacity-50"
+                >
+                  {processingBatch ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  {processingBatch ? 'Processando…' : 'Gerar Faturas'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { calcularConsumo, calcularValorTotal, formatCurrencyBR, formatKWh, getMesAtual, getAnoAtual } from '../utils/calculos';
 import type { EnergiaUnidade, EnergiaSala, EnergiaMedicao, EnergiaMedicaoStatus } from '../types';
 import { MEDICAO_STATUS_CONFIG } from '../types';
+import { gerarFaturaAutomatica } from '../utils/gerarFaturaAutomatica';
 
 interface Props {
   unidades: EnergiaUnidade[];
@@ -148,12 +149,27 @@ export function NovaMedicaoModal({ unidades, salas, isAdmin, userUnidadeId, preS
       observacoes: observacoes.trim(),
       status,
     };
-    const { error: err } = await supabase.from('energia_medicoes').upsert(payload, { onConflict: 'sala_id,mes,ano' });
+    const { data: saved, error: err } = await supabase
+      .from('energia_medicoes')
+      .upsert(payload, { onConflict: 'sala_id,mes,ano' })
+      .select()
+      .single();
     setSaving(false);
 
     if (err) {
       setError(err.message.includes('duplicate') ? 'Já existe medição para este mês/sala' : err.message);
     } else {
+      // Auto-generate fatura when saved with status = 'aprovado'
+      if (status === 'aprovado' && saved) {
+        const sala = salas.find(s => s.id === salaId);
+        if (sala) {
+          try {
+            await gerarFaturaAutomatica(saved as EnergiaMedicao, sala);
+          } catch {
+            // fatura generation failed silently — upsert still succeeded
+          }
+        }
+      }
       onSaved();
     }
   }
