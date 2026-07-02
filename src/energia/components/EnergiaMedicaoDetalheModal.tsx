@@ -33,20 +33,20 @@ function StatusPipeline({ current }: { current: EnergiaMedicaoStatus }) {
         const active = i === currentIdx;
         return (
           <div key={s} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1">
-              <div className={`w-7 h-7 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
-                active ? `${cfg.bg} ${cfg.border} ${cfg.text} ring-2 ring-offset-1 ${cfg.border}` :
-                done  ? 'bg-status-successLight border-status-success/30 text-status-success' :
-                        'bg-surface-1 border-surface-3 text-text-disabled'
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                active ? `${cfg.bg} ${cfg.border} ${cfg.text} ring-2 ring-offset-2 ${cfg.border}` :
+                done  ? 'bg-status-successLight border-status-success/40 text-status-success' :
+                        'bg-surface-2 border-surface-3 text-text-secondary'
               }`}>
-                {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : STEP_ICONS[s]}
+                {done ? <CheckCircle2 className="w-4 h-4" /> : STEP_ICONS[s]}
               </div>
-              <span className={`font-body text-[9px] text-center whitespace-nowrap ${active ? cfg.text + ' font-semibold' : done ? 'text-status-success' : 'text-text-disabled'}`}>
+              <span className={`font-body text-[11px] font-semibold text-center whitespace-nowrap ${active ? cfg.text : done ? 'text-status-success' : 'text-text-secondary'}`}>
                 {cfg.label}
               </span>
             </div>
             {i < STATUS_ORDER.length - 1 && (
-              <div className={`flex-1 h-px mx-1 mb-4 ${done ? 'bg-status-success' : 'bg-surface-3'}`} />
+              <div className={`flex-1 h-0.5 mx-1.5 mb-6 rounded-full ${done ? 'bg-status-success' : 'bg-surface-3'}`} />
             )}
           </div>
         );
@@ -147,7 +147,7 @@ export function EnergiaMedicaoDetalheModal({ medicao, sala, unidade, onClose, on
             {/* Foto do medidor */}
             {medicao.foto_url && (
               <div>
-                <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-2">FOTO DO MEDIDOR</p>
+                <p className="font-body text-xs font-bold text-text-secondary tracking-widest mb-2">FOTO DO MEDIDOR</p>
                 <button
                   onClick={() => setLightbox(true)}
                   className="block w-full rounded-lg overflow-hidden border border-surface-2 hover:border-mos-700 transition-colors focus:outline-none focus:ring-2 focus:ring-mos-700"
@@ -158,58 +158,58 @@ export function EnergiaMedicaoDetalheModal({ medicao, sala, unidade, onClose, on
                     className="w-full max-h-56 object-cover"
                   />
                 </button>
-                <p className="font-body text-[10px] text-text-disabled mt-1.5 text-center">Clique para ampliar</p>
+                <p className="font-body text-[11px] text-text-tertiary mt-1.5 text-center">Clique para ampliar</p>
               </div>
             )}
 
             {/* KPI hero: consumo + valor */}
             <div className="rounded-xl bg-mos-700 px-5 py-4 grid grid-cols-2 gap-4">
               <div>
-                <p className="font-body text-[10px] text-white/70 uppercase tracking-wider mb-1">Consumo</p>
+                <p className="font-body text-xs text-white/80 uppercase tracking-wider mb-1 font-semibold">Consumo</p>
                 <p className="font-data font-bold text-2xl text-white">{formatKWh(Number(medicao.consumo))}</p>
-                <p className="font-body text-[10px] text-white/50 mt-0.5">kWh medidos</p>
+                <p className="font-body text-xs text-white/70 mt-0.5">kWh medidos</p>
               </div>
               <div>
-                <p className="font-body text-[10px] text-white/70 uppercase tracking-wider mb-1">Valor Total</p>
+                <p className="font-body text-xs text-white/80 uppercase tracking-wider mb-1 font-semibold">Valor Total</p>
                 <p className="font-data font-bold text-2xl text-white">{formatCurrencyBR(Number(medicao.valor_total))}</p>
-                <p className="font-body text-[10px] text-white/50 mt-0.5">R$ {Number(medicao.tarifa).toFixed(4)}/kWh</p>
+                <p className="font-body text-xs text-white/70 mt-0.5">R$ {Number(medicao.tarifa).toFixed(4)}/kWh</p>
               </div>
             </div>
 
             {/* Leituras */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg border border-surface-2 px-3 py-2.5">
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-wider">Leit. Anterior</p>
-                <p className="font-data text-sm font-semibold text-text-primary mt-0.5">{Number(medicao.leitura_anterior).toLocaleString('pt-BR')}</p>
+              <div className="rounded-lg border border-surface-2 bg-surface-1 px-3 py-3">
+                <p className="font-body text-[11px] font-bold text-text-secondary uppercase tracking-wider">Leit. Anterior</p>
+                <p className="font-data text-base font-bold text-text-primary mt-1">{Number(medicao.leitura_anterior).toLocaleString('pt-BR')}</p>
               </div>
-              <div className="rounded-lg border border-surface-2 px-3 py-2.5">
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-wider">Leit. Atual</p>
-                <p className="font-data text-sm font-semibold text-text-primary mt-0.5">{Number(medicao.leitura_atual).toLocaleString('pt-BR')}</p>
+              <div className="rounded-lg border border-surface-2 bg-surface-1 px-3 py-3">
+                <p className="font-body text-[11px] font-bold text-text-secondary uppercase tracking-wider">Leit. Atual</p>
+                <p className="font-data text-base font-bold text-text-primary mt-1">{Number(medicao.leitura_atual).toLocaleString('pt-BR')}</p>
               </div>
-              <div className="rounded-lg border border-surface-2 px-3 py-2.5">
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-wider">Tarifa</p>
-                <p className="font-data text-sm font-semibold text-text-primary mt-0.5">R$ {Number(medicao.tarifa).toFixed(4)}</p>
+              <div className="rounded-lg border border-surface-2 bg-surface-1 px-3 py-3">
+                <p className="font-body text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tarifa</p>
+                <p className="font-data text-base font-bold text-text-primary mt-1">R$ {Number(medicao.tarifa).toFixed(4)}</p>
               </div>
             </div>
 
             {/* Pipeline de status */}
             <div>
-              <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-3">CICLO DE COBRANÇA</p>
+              <p className="font-body text-xs font-bold text-text-secondary tracking-widest mb-4">CICLO DE COBRANÇA</p>
               <StatusPipeline current={medicao.status} />
             </div>
 
             {/* Observacoes */}
             {medicao.observacoes && (
               <div>
-                <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1.5">OBSERVAÇÕES</p>
-                <p className="font-body text-sm text-text-secondary bg-surface-1 rounded-lg px-4 py-3 border border-surface-2 whitespace-pre-wrap">
+                <p className="font-body text-xs font-bold text-text-secondary tracking-widest mb-1.5">OBSERVAÇÕES</p>
+                <p className="font-body text-sm text-text-primary bg-surface-1 rounded-lg px-4 py-3 border border-surface-2 whitespace-pre-wrap">
                   {medicao.observacoes}
                 </p>
               </div>
             )}
 
             {/* Registrada em */}
-            <p className="font-body text-[11px] text-text-disabled">
+            <p className="font-body text-xs text-text-tertiary font-medium">
               Registrada em {new Date(medicao.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
             </p>
           </div>
