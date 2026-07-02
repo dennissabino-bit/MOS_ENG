@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, DoorOpen, Zap, Users, FileText, Receipt, Home,
+  LayoutDashboard, Building2, DoorOpen, Zap, FileText, Receipt, Home, Settings,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { usePendencias } from '../hooks/usePendencias';
+import type { TelaKey } from '../pages/EnergiaConfiguracoes';
 
 interface EnergiaLayoutProps {
   title: string;
@@ -17,17 +18,18 @@ interface TabDef {
   label: string;
   icon: React.ElementType;
   adminOnly: boolean;
+  telaKey?: TelaKey;
 }
 
 const ENERGIA_TABS: TabDef[] = [
-  { to: '/imoveis/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
-  { to: '/imoveis/unidades',  label: 'Unidades',  icon: Building2,       adminOnly: true  },
-  { to: '/imoveis/salas',     label: 'Salas',     icon: DoorOpen,        adminOnly: false },
-  { to: '/imoveis/medicoes',  label: 'Medições',  icon: Zap,             adminOnly: false },
-  { to: '/imoveis/alugueis',  label: 'Aluguéis',  icon: Home,            adminOnly: false },
-  { to: '/imoveis/faturas',   label: 'Faturas',   icon: Receipt,         adminOnly: false },
-  { to: '/imoveis/relatorios',label: 'Relatórios',icon: FileText,        adminOnly: false },
-  { to: '/imoveis/usuarios',  label: 'Usuários',  icon: Users,           adminOnly: true  },
+  { to: '/imoveis/dashboard',      label: 'Dashboard',    icon: LayoutDashboard, adminOnly: false, telaKey: 'dashboard'  },
+  { to: '/imoveis/unidades',       label: 'Unidades',     icon: Building2,       adminOnly: true                        },
+  { to: '/imoveis/salas',          label: 'Salas',        icon: DoorOpen,        adminOnly: false, telaKey: 'salas'      },
+  { to: '/imoveis/medicoes',       label: 'Medições',     icon: Zap,             adminOnly: false, telaKey: 'medicoes'   },
+  { to: '/imoveis/alugueis',       label: 'Aluguéis',     icon: Home,            adminOnly: false, telaKey: 'alugueis'   },
+  { to: '/imoveis/faturas',        label: 'Faturas',      icon: Receipt,         adminOnly: false, telaKey: 'faturas'    },
+  { to: '/imoveis/relatorios',     label: 'Relatórios',   icon: FileText,        adminOnly: false, telaKey: 'relatorios' },
+  { to: '/imoveis/configuracoes',  label: 'Configurações', icon: Settings,       adminOnly: true                        },
 ];
 
 function EnergiaTabsBar() {
@@ -35,7 +37,18 @@ function EnergiaTabsBar() {
   const { pendentes } = usePendencias(user, isAdmin);
   const location = useLocation();
 
-  const visible = ENERGIA_TABS.filter(t => !t.adminOnly || isAdmin);
+  const telasPermitidas: TelaKey[] | null =
+    !isAdmin && user && (user as { telas_permitidas?: TelaKey[] }).telas_permitidas?.length
+      ? (user as { telas_permitidas: TelaKey[] }).telas_permitidas
+      : null;
+
+  const visible = ENERGIA_TABS.filter(tab => {
+    if (tab.adminOnly) return isAdmin;
+    if (!isAdmin && telasPermitidas && tab.telaKey) {
+      return telasPermitidas.includes(tab.telaKey);
+    }
+    return true;
+  });
 
   return (
     <div className="sticky top-0 z-10 bg-surface-0 border-b border-surface-2 flex items-center">

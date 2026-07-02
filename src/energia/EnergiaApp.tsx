@@ -8,23 +8,23 @@ import SalaDetalhe from './pages/SalaDetalhe';
 import Medicoes from './pages/Medicoes';
 import Alugueis from './pages/Alugueis';
 import Faturas from './pages/Faturas';
-import Usuarios from './pages/Usuarios';
 import Relatorios from './pages/Relatorios';
+import EnergiaConfiguracoes from './pages/EnergiaConfiguracoes';
 
 function EnergiaRoutes() {
   return (
     <Routes>
-      <Route path="/dashboard"     element={<EnergiaDashboard />} />
-      <Route path="/unidades"      element={<Unidades />} />
-      <Route path="/unidades/:id"  element={<UnidadeDetalhe />} />
-      <Route path="/salas"         element={<Salas />} />
-      <Route path="/salas/:id"     element={<SalaDetalhe />} />
-      <Route path="/medicoes"      element={<Medicoes />} />
-      <Route path="/alugueis"      element={<Alugueis />} />
-      <Route path="/faturas"       element={<Faturas />} />
-      <Route path="/relatorios"    element={<Relatorios />} />
-      <Route path="/usuarios"      element={<Usuarios />} />
-      <Route path="*"              element={<Navigate to="/imoveis/dashboard" replace />} />
+      <Route path="/dashboard"      element={<EnergiaDashboard />} />
+      <Route path="/unidades"       element={<Unidades />} />
+      <Route path="/unidades/:id"   element={<UnidadeDetalhe />} />
+      <Route path="/salas"          element={<Salas />} />
+      <Route path="/salas/:id"      element={<SalaDetalhe />} />
+      <Route path="/medicoes"       element={<Medicoes />} />
+      <Route path="/alugueis"       element={<Alugueis />} />
+      <Route path="/faturas"        element={<Faturas />} />
+      <Route path="/relatorios"     element={<Relatorios />} />
+      <Route path="/configuracoes"  element={<EnergiaConfiguracoes />} />
+      <Route path="*"               element={<Navigate to="/imoveis/dashboard" replace />} />
     </Routes>
   );
 }

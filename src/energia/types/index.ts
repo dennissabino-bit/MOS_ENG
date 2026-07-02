@@ -8,6 +8,7 @@ export interface EnergiaUsuario {
   perfil: EnergiaPerfil;
   unidade_id: string | null;
   ativo: boolean;
+  telas_permitidas: string[] | null;
   created_at: string;
 }
 
