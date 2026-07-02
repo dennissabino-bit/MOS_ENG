@@ -380,15 +380,15 @@ export function NovaFaturaModal({ unidades, isAdmin, userUnidadeId, onClose, onS
               {/* Subtotals */}
               <div className="rounded-lg bg-mos-700 px-4 py-3 grid grid-cols-3 gap-3 text-center mt-2">
                 <div>
-                  <p className="font-body text-[10px] text-white/60">Energia</p>
+                  <p className="font-body text-xs text-white/75 font-semibold">Energia</p>
                   <p className="font-data font-bold text-sm text-white">{formatCurrencyBR(totals.energia)}</p>
                 </div>
                 <div>
-                  <p className="font-body text-[10px] text-white/60">Aluguel</p>
+                  <p className="font-body text-xs text-white/75 font-semibold">Aluguel</p>
                   <p className="font-data font-bold text-sm text-white">{formatCurrencyBR(totals.aluguel)}</p>
                 </div>
                 <div>
-                  <p className="font-body text-[10px] text-white/60">Total</p>
+                  <p className="font-body text-xs text-white/75 font-semibold">Total</p>
                   <p className="font-data font-bold text-base text-white">{formatCurrencyBR(totals.total)}</p>
                 </div>
               </div>

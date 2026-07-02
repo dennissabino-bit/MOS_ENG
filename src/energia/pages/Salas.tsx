@@ -291,13 +291,13 @@ export default function Salas() {
                 </div>
                 <div className="flex items-center gap-6 flex-shrink-0">
                   <div className="hidden sm:flex flex-col items-end min-w-[80px]">
-                    <span className="font-body text-[10px] text-text-disabled tracking-wider">ALUGUEL</span>
+                    <span className="font-body text-xs font-bold text-text-secondary tracking-wider">ALUGUEL</span>
                     <span className="font-data text-sm font-medium text-text-primary">
                       {sala.valor_aluguel != null ? formatCurrencyFull(sala.valor_aluguel) : '—'}
                     </span>
                   </div>
                   <div className="hidden sm:flex flex-col items-end min-w-[80px]">
-                    <span className="font-body text-[10px] text-text-disabled tracking-wider">ENERGIA</span>
+                    <span className="font-body text-xs font-bold text-text-secondary tracking-wider">ENERGIA</span>
                     <span className="font-data text-sm font-medium text-text-primary">
                       {lastMedicao.has(sala.id) ? formatCurrencyFull(lastMedicao.get(sala.id)!) : '—'}
                     </span>

@@ -240,7 +240,7 @@ export default function Relatorios() {
   const previewRows = exportRows.slice(0, 11);
 
   const selectCls = 'w-full px-2.5 py-2 text-xs font-body bg-surface-1 border border-surface-2 rounded-lg text-text-primary appearance-none focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700/50';
-  const labelCls = 'block font-body text-[10px] font-semibold text-text-tertiary uppercase tracking-wider mb-1';
+  const labelCls = 'block font-body text-xs font-bold text-text-secondary uppercase tracking-wider mb-1';
 
   if (loading) {
     return (
@@ -348,26 +348,26 @@ export default function Relatorios() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="card p-4">
-                <p className="font-body text-xs text-text-tertiary mb-1">Total no período</p>
+                <p className="font-body text-xs font-semibold text-text-secondary mb-1">Total no período</p>
                 <p className="font-data text-2xl font-bold text-text-primary">{formatShort(totalKWh)}</p>
-                <p className="font-body text-[10px] text-text-tertiary mt-0.5">kWh consumidos</p>
+                <p className="font-body text-xs text-text-tertiary mt-0.5">kWh consumidos</p>
               </div>
               <div className="card p-4">
-                <p className="font-body text-xs text-text-tertiary mb-1">Média mensal</p>
+                <p className="font-body text-xs font-semibold text-text-secondary mb-1">Média mensal</p>
                 <p className="font-data text-2xl font-bold text-text-primary">{formatShort(mediaMensalKWh)}</p>
-                <p className="font-body text-[10px] text-text-tertiary mt-0.5">kWh / mês</p>
+                <p className="font-body text-xs text-text-tertiary mt-0.5">kWh / mês</p>
               </div>
               <div className="card p-4">
-                <p className="font-body text-xs text-text-tertiary mb-1">Pico de consumo</p>
+                <p className="font-body text-xs font-semibold text-text-secondary mb-1">Pico de consumo</p>
                 <p className="font-data text-2xl font-bold text-mos-700">{formatShort(picoMes.consumo)}</p>
-                <p className="font-body text-[10px] text-text-tertiary mt-0.5">
+                <p className="font-body text-xs text-text-tertiary mt-0.5">
                   {picoMes.mes ? formatMesAno(picoMes.mes, picoMes.ano) : '—'}
                 </p>
               </div>
               <div className="card p-4">
-                <p className="font-body text-xs text-text-tertiary mb-1">Medições</p>
+                <p className="font-body text-xs font-semibold text-text-secondary mb-1">Medições</p>
                 <p className="font-data text-2xl font-bold text-text-primary">{filteredMedicoes.length}</p>
-                <p className="font-body text-[10px] text-text-tertiary mt-0.5">lançamentos</p>
+                <p className="font-body text-xs text-text-tertiary mt-0.5">lançamentos</p>
               </div>
             </div>
 

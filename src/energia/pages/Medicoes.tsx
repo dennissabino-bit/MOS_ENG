@@ -460,17 +460,17 @@ export default function Medicoes() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-surface-2 bg-surface-1">
-                      <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">COMPETÊNCIA</th>
-                      <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">SALA</th>
-                      <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden md:table-cell">UNIDADE</th>
-                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden lg:table-cell">LEIT. ANT.</th>
-                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden lg:table-cell">LEIT. ATUAL</th>
-                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">CONSUMO</th>
-                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">VAR. MÊS</th>
-                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">VALOR</th>
-                      <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">STATUS</th>
-                      <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">FOTO</th>
-                      <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÕES</th>
+                      <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">COMPETÊNCIA</th>
+                      <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">SALA</th>
+                      <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden md:table-cell">UNIDADE</th>
+                      <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">LEIT. ANT.</th>
+                      <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">LEIT. ATUAL</th>
+                      <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">CONSUMO</th>
+                      <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden sm:table-cell">VAR. MÊS</th>
+                      <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">VALOR</th>
+                      <th className="text-center py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden sm:table-cell">STATUS</th>
+                      <th className="text-center py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden sm:table-cell">FOTO</th>
+                      <th className="text-center py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">AÇÕES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-2">

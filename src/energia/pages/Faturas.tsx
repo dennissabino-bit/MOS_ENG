@@ -154,7 +154,7 @@ export default function Faturas() {
         {/* Page header */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1">FINANCEIRO</p>
+            <p className="font-body text-xs font-bold text-text-secondary tracking-widest mb-1">FINANCEIRO</p>
             <h1 className="font-display font-extrabold text-3xl text-text-primary tracking-tight">FATURAS</h1>
             <p className="font-body text-sm text-text-tertiary mt-1">Controle e envio de faturas de energia e aluguel</p>
           </div>
@@ -177,7 +177,7 @@ export default function Faturas() {
               <span className="font-body text-xs text-text-tertiary">A Receber</span>
             </div>
             <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(kpis.totalAReceber)}</p>
-            <p className="font-body text-[10px] text-text-disabled mt-0.5">{kpis.countAReceber} fatura{kpis.countAReceber !== 1 ? 's' : ''}</p>
+            <p className="font-body text-xs text-text-tertiary mt-0.5">{kpis.countAReceber} fatura{kpis.countAReceber !== 1 ? 's' : ''}</p>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -187,7 +187,7 @@ export default function Faturas() {
               <span className="font-body text-xs text-text-tertiary">Recebido</span>
             </div>
             <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(kpis.totalRecebido)}</p>
-            <p className="font-body text-[10px] text-text-disabled mt-0.5">{kpis.countPagas} fatura{kpis.countPagas !== 1 ? 's' : ''}</p>
+            <p className="font-body text-xs text-text-tertiary mt-0.5">{kpis.countPagas} fatura{kpis.countPagas !== 1 ? 's' : ''}</p>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -197,7 +197,7 @@ export default function Faturas() {
               <span className="font-body text-xs text-text-tertiary">Vencidas</span>
             </div>
             <p className="font-display font-bold text-xl text-status-error">{kpis.countVencidas}</p>
-            <p className="font-body text-[10px] text-text-disabled mt-0.5">{formatCurrencyBR(kpis.totalVencidas)}</p>
+            <p className="font-body text-xs text-text-tertiary mt-0.5">{formatCurrencyBR(kpis.totalVencidas)}</p>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -207,7 +207,7 @@ export default function Faturas() {
               <span className="font-body text-xs text-text-tertiary">Rascunhos</span>
             </div>
             <p className="font-display font-bold text-xl text-text-primary">{kpis.countRascunhos}</p>
-            <p className="font-body text-[10px] text-text-disabled mt-0.5">em elaboração</p>
+            <p className="font-body text-xs text-text-tertiary mt-0.5">em elaboração</p>
           </div>
         </div>
 
@@ -317,14 +317,14 @@ export default function Faturas() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-surface-2 bg-surface-1">
-                    <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">COMPETÊNCIA</th>
-                    <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden md:table-cell">UNIDADE</th>
-                    <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">DESTINATÁRIO</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden lg:table-cell">ENERGIA</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden lg:table-cell">ALUGUEL</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">TOTAL</th>
-                    <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">STATUS</th>
-                    <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÕES</th>
+                    <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">COMPETÊNCIA</th>
+                    <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden md:table-cell">UNIDADE</th>
+                    <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">DESTINATÁRIO</th>
+                    <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">ENERGIA</th>
+                    <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">ALUGUEL</th>
+                    <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">TOTAL</th>
+                    <th className="text-center py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">STATUS</th>
+                    <th className="text-center py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">AÇÕES</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-2">
@@ -341,7 +341,7 @@ export default function Faturas() {
                         <td className="py-3 px-4">
                           <span className="font-data text-sm text-text-primary font-semibold">{formatMesAno(f.mes, f.ano)}</span>
                           {f.data_vencimento && (
-                            <p className="font-body text-[10px] text-text-disabled mt-0.5">Venc. {new Date(f.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                            <p className="font-body text-xs text-text-tertiary mt-0.5">Venc. {new Date(f.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                           )}
                         </td>
                         <td className="py-3 px-4 hidden md:table-cell">
@@ -352,7 +352,7 @@ export default function Faturas() {
                         </td>
                         <td className="py-3 px-4">
                           <p className="font-body text-sm text-text-primary">{f.destinatario_nome || '—'}</p>
-                          {f.destinatario_email && <p className="font-body text-[10px] text-text-disabled truncate max-w-[160px]">{f.destinatario_email}</p>}
+                          {f.destinatario_email && <p className="font-body text-xs text-text-tertiary truncate max-w-[160px]">{f.destinatario_email}</p>}
                         </td>
                         <td className="py-3 px-4 text-right hidden lg:table-cell">
                           <span className="font-data text-sm text-text-tertiary">{formatCurrencyBR(Number(f.valor_energia))}</span>

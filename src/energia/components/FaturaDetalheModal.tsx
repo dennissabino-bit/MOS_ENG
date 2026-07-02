@@ -29,20 +29,20 @@ function StatusPipeline({ current }: { current: EnergiaFaturaStatus }) {
         const active = s === current || (current === 'vencida' && s === 'enviada');
         return (
           <div key={s} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1">
-              <div className={`w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all ${
-                active ? `${cfg.bg} ${cfg.border} ${cfg.text}` :
-                done   ? 'bg-status-successLight border-status-success/30 text-status-success' :
-                         'bg-surface-1 border-surface-3 text-text-disabled'
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all ${
+                active ? `${cfg.bg} ${cfg.border} ${cfg.text} ring-2 ring-offset-2 ${cfg.border}` :
+                done   ? 'bg-status-successLight border-status-success/40 text-status-success' :
+                         'bg-surface-2 border-surface-3 text-text-secondary'
               }`}>
-                {done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
+                {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
               </div>
-              <span className={`font-body text-[9px] text-center whitespace-nowrap ${active ? cfg.text + ' font-semibold' : done ? 'text-status-success' : 'text-text-disabled'}`}>
+              <span className={`font-body text-[11px] font-semibold text-center whitespace-nowrap ${active ? cfg.text : done ? 'text-status-success' : 'text-text-secondary'}`}>
                 {cfg.label}
               </span>
             </div>
             {i < visibleOrder.length - 1 && (
-              <div className={`flex-1 h-px mx-1 mb-4 ${done ? 'bg-status-success' : 'bg-surface-3'}`} />
+              <div className={`flex-1 h-0.5 mx-1.5 mb-6 rounded-full ${done ? 'bg-status-success' : 'bg-surface-3'}`} />
             )}
           </div>
         );
@@ -140,7 +140,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
 
           {/* Pipeline — not printed */}
           <div className="px-6 py-4 border-b border-surface-2 print:hidden">
-            <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-3">CICLO DA FATURA</p>
+            <p className="font-body text-xs font-bold text-text-secondary tracking-widest mb-4">CICLO DA FATURA</p>
             <StatusPipeline current={fatura.status} />
           </div>
 
@@ -150,7 +150,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
             {/* Fatura header */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b-2 border-mos-700">
               <div>
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-widest">FATURA DE COBRANÇA</p>
+                <p className="font-body text-xs font-bold text-text-secondary uppercase tracking-widest">FATURA DE COBRANÇA</p>
                 <h1 className="font-display font-extrabold text-2xl text-mos-700 mt-0.5">
                   Competência {competencia}
                 </h1>
@@ -159,19 +159,19 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                     <Building2 className="w-3.5 h-3.5 text-text-tertiary" />
                     <span className="font-body text-sm text-text-secondary">{unidade.nome}</span>
                     {(unidade.cidade || unidade.estado) && (
-                      <span className="font-body text-sm text-text-disabled">— {[unidade.cidade, unidade.estado].filter(Boolean).join(', ')}</span>
+                      <span className="font-body text-sm text-text-tertiary">— {[unidade.cidade, unidade.estado].filter(Boolean).join(', ')}</span>
                     )}
                   </div>
                 )}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-body text-[10px] text-text-tertiary">Emitida em</p>
+                <p className="font-body text-xs font-bold text-text-secondary">Emitida em</p>
                 <p className="font-data text-xs font-semibold text-text-primary">
                   {new Date(fatura.created_at).toLocaleDateString('pt-BR')}
                 </p>
                 {fatura.data_vencimento && (
                   <>
-                    <p className="font-body text-[10px] text-text-tertiary mt-1.5">Vencimento</p>
+                    <p className="font-body text-xs font-bold text-text-secondary mt-1.5">Vencimento</p>
                     <p className={`font-data text-xs font-semibold ${fatura.status === 'vencida' ? 'text-status-error' : 'text-text-primary'}`}>
                       {new Date(fatura.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
                     </p>
@@ -183,13 +183,13 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
             {/* Destinatário */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-widest mb-1">Destinatário</p>
+                <p className="font-body text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Destinatário</p>
                 <p className="font-body text-sm font-semibold text-text-primary">{fatura.destinatario_nome}</p>
                 {fatura.destinatario_cpf_cnpj && <p className="font-data text-xs text-text-secondary">{fatura.destinatario_cpf_cnpj}</p>}
                 {fatura.destinatario_email && <p className="font-body text-xs text-text-tertiary">{fatura.destinatario_email}</p>}
               </div>
               <div className="text-right">
-                <p className="font-body text-[10px] text-text-tertiary uppercase tracking-widest mb-1">Total a Pagar</p>
+                <p className="font-body text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Total a Pagar</p>
                 <p className="font-data font-extrabold text-2xl text-mos-700">{formatCurrencyBR(Number(fatura.valor_total))}</p>
               </div>
             </div>
@@ -203,24 +203,24 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Zap className="w-3.5 h-3.5 text-mos-700" />
-                      <p className="font-body text-xs font-semibold text-text-primary uppercase tracking-wider">Energia Elétrica</p>
+                      <p className="font-body text-xs font-bold text-text-primary uppercase tracking-wider">Energia Elétrica</p>
                     </div>
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-surface-2">
-                          <th className="text-left py-1.5 font-body text-[10px] text-text-tertiary uppercase">Descrição</th>
-                          <th className="text-right py-1.5 font-body text-[10px] text-text-tertiary uppercase">Valor</th>
+                          <th className="text-left py-1.5 font-body text-xs font-bold text-text-secondary uppercase">Descrição</th>
+                          <th className="text-right py-1.5 font-body text-xs font-bold text-text-secondary uppercase">Valor</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-1">
                         {itensEnergia.map(item => (
                           <tr key={item.id}>
-                            <td className="py-2 font-body text-sm text-text-secondary">{item.descricao}</td>
+                            <td className="py-2 font-body text-sm text-text-primary">{item.descricao}</td>
                             <td className="py-2 text-right font-data text-sm font-semibold text-text-primary">{formatCurrencyBR(Number(item.valor))}</td>
                           </tr>
                         ))}
                         <tr className="border-t border-surface-2">
-                          <td className="py-2 font-body text-xs font-semibold text-text-secondary">Subtotal Energia</td>
+                          <td className="py-2 font-body text-sm font-bold text-text-primary">Subtotal Energia</td>
                           <td className="py-2 text-right font-data text-sm font-bold text-text-primary">{formatCurrencyBR(Number(fatura.valor_energia))}</td>
                         </tr>
                       </tbody>
@@ -232,24 +232,24 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Home className="w-3.5 h-3.5 text-text-secondary" />
-                      <p className="font-body text-xs font-semibold text-text-primary uppercase tracking-wider">Aluguel</p>
+                      <p className="font-body text-xs font-bold text-text-primary uppercase tracking-wider">Aluguel</p>
                     </div>
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-surface-2">
-                          <th className="text-left py-1.5 font-body text-[10px] text-text-tertiary uppercase">Descrição</th>
-                          <th className="text-right py-1.5 font-body text-[10px] text-text-tertiary uppercase">Valor</th>
+                          <th className="text-left py-1.5 font-body text-xs font-bold text-text-secondary uppercase">Descrição</th>
+                          <th className="text-right py-1.5 font-body text-xs font-bold text-text-secondary uppercase">Valor</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-1">
                         {itensAluguel.map(item => (
                           <tr key={item.id}>
-                            <td className="py-2 font-body text-sm text-text-secondary">{item.descricao}</td>
+                            <td className="py-2 font-body text-sm text-text-primary">{item.descricao}</td>
                             <td className="py-2 text-right font-data text-sm font-semibold text-text-primary">{formatCurrencyBR(Number(item.valor))}</td>
                           </tr>
                         ))}
                         <tr className="border-t border-surface-2">
-                          <td className="py-2 font-body text-xs font-semibold text-text-secondary">Subtotal Aluguel</td>
+                          <td className="py-2 font-body text-sm font-bold text-text-primary">Subtotal Aluguel</td>
                           <td className="py-2 text-right font-data text-sm font-bold text-text-primary">{formatCurrencyBR(Number(fatura.valor_aluguel))}</td>
                         </tr>
                       </tbody>
@@ -260,9 +260,9 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                 {/* Total geral */}
                 <div className="rounded-xl bg-mos-700 px-5 py-4 flex items-center justify-between">
                   <div>
-                    <p className="font-body text-xs text-white/70 uppercase tracking-wider">Total Geral</p>
+                    <p className="font-body text-xs text-white/80 uppercase tracking-wider font-semibold">Total Geral</p>
                     {Number(fatura.valor_energia) > 0 && Number(fatura.valor_aluguel) > 0 && (
-                      <p className="font-body text-[10px] text-white/50 mt-0.5">
+                      <p className="font-body text-xs text-white/70 mt-0.5">
                         Energia {formatCurrencyBR(Number(fatura.valor_energia))} + Aluguel {formatCurrencyBR(Number(fatura.valor_aluguel))}
                       </p>
                     )}
@@ -275,7 +275,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
             {/* Pagamento: QR Code PIX + Código de barras */}
             {(fatura.pix_chave || fatura.codigo_barras) && (
               <div className="border-t border-surface-2 pt-4">
-                <p className="font-body text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Como Pagar</p>
+                <p className="font-body text-xs font-bold text-text-secondary uppercase tracking-widest mb-3">Como Pagar</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {fatura.pix_chave && qrUrl && (
                     <div className="flex flex-col items-center gap-3 p-4 rounded-xl border border-surface-2 bg-surface-1">
@@ -287,7 +287,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                         loading="lazy"
                       />
                       <div className="w-full">
-                        <p className="font-body text-[10px] text-text-tertiary mb-1">Chave PIX</p>
+                        <p className="font-body text-xs font-bold text-text-secondary mb-1">Chave PIX</p>
                         <div className="flex items-center gap-2 bg-white border border-surface-3 rounded-md px-3 py-1.5">
                           <span className="font-data text-xs text-text-primary flex-1 truncate">{fatura.pix_chave}</span>
                           <button
@@ -321,7 +321,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                         </div>
                       </div>
                       <div>
-                        <p className="font-body text-[10px] text-text-tertiary mb-1">Linha digitável</p>
+                        <p className="font-body text-xs font-bold text-text-secondary mb-1">Linha digitável</p>
                         <div className="flex items-center gap-2 bg-white border border-surface-3 rounded-md px-3 py-1.5">
                           <span className="font-data text-[10px] text-text-primary flex-1 break-all leading-relaxed">{fatura.codigo_barras}</span>
                           <button
@@ -331,7 +331,7 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
                             {copied ? <Check className="w-3 h-3 text-status-success" /> : <Copy className="w-3 h-3 text-text-tertiary" />}
                           </button>
                         </div>
-                        {copied && <p className="font-body text-[10px] text-status-success mt-1">Copiado!</p>}
+                        {copied && <p className="font-body text-xs text-status-success mt-1">Copiado!</p>}
                       </div>
                     </div>
                   )}
@@ -350,8 +350,8 @@ export function FaturaDetalheModal({ fatura, unidade, onClose, onStatusChanged }
             {/* Observacoes */}
             {fatura.observacoes && (
               <div className="bg-surface-1 rounded-lg px-4 py-3 border border-surface-2">
-                <p className="font-body text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-1">Observações</p>
-                <p className="font-body text-sm text-text-secondary whitespace-pre-wrap">{fatura.observacoes}</p>
+                <p className="font-body text-xs font-bold text-text-secondary uppercase tracking-widest mb-1">Observações</p>
+                <p className="font-body text-sm text-text-primary whitespace-pre-wrap">{fatura.observacoes}</p>
               </div>
             )}
           </div>

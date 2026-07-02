@@ -213,11 +213,11 @@ export default function Usuarios() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-surface-2 bg-surface-1">
-                    <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">USUÁRIO</th>
-                    <th className="text-left px-4 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">PERFIL</th>
-                    <th className="text-left px-4 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden md:table-cell">UNIDADE</th>
-                    <th className="text-left px-4 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden lg:table-cell">STATUS</th>
-                    <th className="text-right px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÕES</th>
+                    <th className="text-left px-5 py-3 font-body text-xs font-bold text-text-secondary tracking-widest">USUÁRIO</th>
+                    <th className="text-left px-4 py-3 font-body text-xs font-bold text-text-secondary tracking-widest hidden sm:table-cell">PERFIL</th>
+                    <th className="text-left px-4 py-3 font-body text-xs font-bold text-text-secondary tracking-widest hidden md:table-cell">UNIDADE</th>
+                    <th className="text-left px-4 py-3 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">STATUS</th>
+                    <th className="text-right px-5 py-3 font-body text-xs font-bold text-text-secondary tracking-widest">AÇÕES</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-2">
@@ -322,14 +322,14 @@ export default function Usuarios() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-surface-2 bg-surface-1">
-                  <th className="text-left px-5 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÃO</th>
-                  <th className="text-center px-6 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">
+                  <th className="text-left px-5 py-3 font-body text-xs font-bold text-text-secondary tracking-widest">AÇÃO</th>
+                  <th className="text-center px-6 py-3 font-body text-xs font-bold text-text-secondary tracking-widest">
                     <span className="inline-flex items-center gap-1.5">
                       <ShieldCheck className="w-3 h-3 text-mos-700" />
                       ADMIN
                     </span>
                   </th>
-                  <th className="text-center px-6 py-3 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">
+                  <th className="text-center px-6 py-3 font-body text-xs font-bold text-text-secondary tracking-widest">
                     <span className="inline-flex items-center gap-1.5">
                       <Shield className="w-3 h-3 text-status-info" />
                       GERENTE
