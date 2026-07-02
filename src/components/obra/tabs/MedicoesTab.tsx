@@ -368,6 +368,10 @@ export function MedicoesTab({ medicoes, obraOrcado, obraId, onMedicoesChange }: 
         <MedicaoDetalheModal
           medicao={selectedMedicao}
           onClose={() => setSelectedMedicao(null)}
+          onStatusChanged={updated => {
+            onMedicoesChange(prev => prev.map(m => m.id === updated.id ? updated : m));
+            setSelectedMedicao(null);
+          }}
         />
       )}
     </div>
