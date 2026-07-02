@@ -58,9 +58,9 @@ export async function gerarFaturaAutomatica(
         status: 'rascunho',
         valor_energia: 0,
         valor_aluguel: 0,
-        destinatario_nome: unidadeData?.gerente_nome || '',
-        destinatario_email: unidadeData?.gerente_email || '',
-        destinatario_cpf_cnpj: '',
+        destinatario_nome: sala.responsavel || unidadeData?.gerente_nome || '',
+        destinatario_email: sala.email || unidadeData?.gerente_email || '',
+        destinatario_cpf_cnpj: sala.cpf_cnpj || '',
         observacoes: '',
       })
       .select()

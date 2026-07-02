@@ -1,19 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Receipt, Plus, Search, ChevronDown, Building2, CheckCircle2,
-  TrendingDown, Clock, AlertTriangle, FileText, Trash2, Zap, Loader2,
+  Clock, AlertTriangle, FileText, Trash2, Zap, Loader2,
+  ChevronRight, Square, CheckSquare, MinusSquare,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaFaturaModal } from '../components/NovaFaturaModal';
 import { FaturaDetalheModal } from '../components/FaturaDetalheModal';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { supabase } from '../../lib/supabase';
-import { formatCurrencyBR, formatMesAno, getAnoAtual, getMesAtual } from '../utils/calculos';
+import { formatCurrencyBR, formatMesAno, getAnoAtual } from '../utils/calculos';
 import { gerarFaturaAutomatica } from '../utils/gerarFaturaAutomatica';
 import type { EnergiaUnidade, EnergiaFatura, EnergiaFaturaStatus, EnergiaMedicao, EnergiaSala } from '../types';
 import { FATURA_STATUS_CONFIG } from '../types';
 
 const MESES_OPTS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+const STATUS_ORDER: EnergiaFaturaStatus[] = ['rascunho', 'enviada', 'visualizada', 'paga'];
+
+function nextStatusFor(current: EnergiaFaturaStatus): EnergiaFaturaStatus | null {
+  if (current === 'vencida') return 'paga';
+  const idx = STATUS_ORDER.indexOf(current);
+  return idx >= 0 && idx < STATUS_ORDER.length - 1 ? STATUS_ORDER[idx + 1] : null;
+}
 
 export default function Faturas() {
   const { user, isAdmin } = useEnergiaAuth();
@@ -37,7 +46,14 @@ export default function Faturas() {
   const [processingBatch, setProcessingBatch] = useState(false);
   const [batchResult, setBatchResult] = useState<string | null>(null);
 
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkSaving, setBulkSaving] = useState(false);
+
   useEffect(() => { fetchData(); fetchOrphaned(); }, [isAdmin, user]);
+
+  // Clear selection when filters change
+  useEffect(() => { setSelectedIds(new Set()); }, [filterUnidadeId, filterStatus, filterMes, filterAno, search]);
 
   async function fetchData() {
     setLoading(true);
@@ -57,16 +73,11 @@ export default function Faturas() {
   }
 
   async function fetchOrphaned() {
-    // Medicoes approved but without fatura_id
-    let q = supabase
+    const { data } = await supabase
       .from('energia_medicoes')
       .select('*')
       .eq('status', 'aprovado')
       .is('fatura_id', null);
-    if (!isAdmin && user?.unidade_id) {
-      // Filter by sala's unidade — we'll do client-side filtering after fetching salas
-    }
-    const { data } = await q;
     setOrphanedMedicoes((data as EnergiaMedicao[]) || []);
   }
 
@@ -75,7 +86,6 @@ export default function Faturas() {
     setProcessingBatch(true);
     setBatchResult(null);
 
-    // Fetch all salas needed
     const salaIds = [...new Set(orphanedMedicoes.map(m => m.sala_id))];
     const { data: salasData } = await supabase
       .from('energia_salas')
@@ -135,6 +145,52 @@ export default function Faturas() {
       countRascunhos: rascunhos.length,
     };
   }, [faturas]);
+
+  // Multi-select helpers
+  const selectableIds = useMemo(
+    () => filtered.filter(f => f.status !== 'paga').map(f => f.id),
+    [filtered]
+  );
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
+  const someSelected = selectableIds.some(id => selectedIds.has(id));
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableIds));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkAdvance() {
+    const toAdvance = filtered.filter(f => selectedIds.has(f.id));
+    if (toAdvance.length === 0) return;
+    setBulkSaving(true);
+
+    await Promise.all(toAdvance.map(async f => {
+      const next = nextStatusFor(f.status);
+      if (!next) return;
+      const extra: Record<string, string> = {};
+      if (next === 'enviada') extra.data_envio = new Date().toISOString();
+      if (next === 'paga') extra.data_pagamento = new Date().toISOString().split('T')[0];
+      await supabase
+        .from('energia_faturas')
+        .update({ status: next, ...extra })
+        .eq('id', f.id);
+    }));
+
+    setBulkSaving(false);
+    setSelectedIds(new Set());
+    fetchData();
+  }
 
   async function handleDelete() {
     if (!deletingId) return;
@@ -276,7 +332,6 @@ export default function Faturas() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
           </div>
-          {/* Competencia */}
           <div className="flex items-center bg-surface-0 border border-surface-3 rounded-lg shadow-card overflow-hidden">
             <select
               value={filterMes}
@@ -300,6 +355,33 @@ export default function Faturas() {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-mos-700/5 border border-mos-700/20">
+            <span className="font-body text-sm font-semibold text-mos-700">
+              {selectedIds.size} selecionada{selectedIds.size !== 1 ? 's' : ''}
+            </span>
+            <div className="flex-1" />
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="font-body text-xs text-text-tertiary hover:text-text-primary transition-colors px-2 py-1.5 rounded"
+            >
+              Limpar seleção
+            </button>
+            <button
+              onClick={handleBulkAdvance}
+              disabled={bulkSaving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-mos-700 text-white font-body text-sm font-semibold hover:bg-mos-700/90 transition-colors disabled:opacity-50"
+            >
+              {bulkSaving
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <ChevronRight className="w-3.5 h-3.5" />
+              }
+              {bulkSaving ? 'Processando…' : 'Avançar Status'}
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         {loading ? (
           <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
@@ -317,6 +399,21 @@ export default function Faturas() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-surface-2 bg-surface-1">
+                    {/* Select-all checkbox */}
+                    <th className="py-3 pl-4 pr-2 w-10">
+                      <button
+                        onClick={toggleSelectAll}
+                        className="flex items-center justify-center text-text-tertiary hover:text-mos-700 transition-colors"
+                        title={allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
+                      >
+                        {allSelected
+                          ? <CheckSquare className="w-4 h-4 text-mos-700" />
+                          : someSelected
+                            ? <MinusSquare className="w-4 h-4 text-mos-700" />
+                            : <Square className="w-4 h-4" />
+                        }
+                      </button>
+                    </th>
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">COMPETÊNCIA</th>
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden md:table-cell">UNIDADE</th>
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">DESTINATÁRIO</th>
@@ -332,12 +429,30 @@ export default function Faturas() {
                     const unidade = unidadeMap.get(f.unidade_id);
                     const cfg = FATURA_STATUS_CONFIG[f.status];
                     const isOverdue = f.status === 'vencida';
+                    const isSelected = selectedIds.has(f.id);
+                    const isSelectable = f.status !== 'paga';
                     return (
                       <tr
                         key={f.id}
                         onClick={() => setDetalheId(f.id)}
-                        className={`hover:bg-surface-1 transition-colors cursor-pointer ${isOverdue ? 'bg-status-errorLight/30' : ''}`}
+                        className={`hover:bg-surface-1 transition-colors cursor-pointer ${isOverdue ? 'bg-status-errorLight/30' : ''} ${isSelected ? 'bg-mos-700/5' : ''}`}
                       >
+                        {/* Row checkbox */}
+                        <td className="py-3 pl-4 pr-2" onClick={e => e.stopPropagation()}>
+                          {isSelectable ? (
+                            <button
+                              onClick={() => toggleSelect(f.id)}
+                              className="flex items-center justify-center text-text-tertiary hover:text-mos-700 transition-colors"
+                            >
+                              {isSelected
+                                ? <CheckSquare className="w-4 h-4 text-mos-700" />
+                                : <Square className="w-4 h-4" />
+                              }
+                            </button>
+                          ) : (
+                            <span className="w-4 h-4 block" />
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <span className="font-data text-sm text-text-primary font-semibold">{formatMesAno(f.mes, f.ano)}</span>
                           {f.data_vencimento && (
