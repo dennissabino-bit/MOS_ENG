@@ -736,6 +736,3 @@ export default function EnergiaConfiguracoes() {
     </EnergiaLayout>
   );
 }
-
-
-export default EnergiaConfiguracoes
