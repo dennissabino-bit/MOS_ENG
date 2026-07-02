@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Settings, Users, Truck, GitBranch, Plus, ChevronDown, ChevronRight,
+  Users, Truck, GitBranch, Plus, ChevronDown, ChevronRight,
   Pencil, Trash2, Loader2, Check, X, Archive, ArchiveRestore,
-  Building2, MapPin, Calendar,
+  Building2, MapPin, Calendar, Search, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { UsuariosContent } from './Usuarios';
@@ -21,59 +21,75 @@ interface GrupoComFiliais extends Grupo {
 
 function GrupoRow({
   grupo,
+  searchActive,
   onEditGrupo,
   onDeleteGrupo,
   onAddFilial,
   onEditFilial,
   onDeleteFilial,
+  onToggleFilial,
 }: {
   grupo: GrupoComFiliais;
+  searchActive: boolean;
   onEditGrupo: (g: Grupo) => void;
   onDeleteGrupo: (id: string) => void;
   onAddFilial: (grupoId: string) => void;
   onEditFilial: (f: Filial) => void;
   onDeleteFilial: (id: string) => void;
+  onToggleFilial: (f: Filial) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const ativas = grupo.filiais.filter(f => f.ativa).length;
 
   return (
     <div className="border border-surface-2 rounded-xl overflow-hidden">
       {/* Grupo header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-surface-1 hover:bg-surface-2 transition-colors">
+      <div className="flex items-center gap-3 px-4 py-3.5 bg-surface-1 hover:bg-surface-2 transition-colors">
         <button
           onClick={() => setExpanded(v => !v)}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left"
+          className="flex items-center gap-3 flex-1 min-w-0 text-left"
         >
-          {expanded
-            ? <ChevronDown className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-            : <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-          }
-          <span className="inline-flex items-center justify-center w-8 h-6 rounded bg-mos-700 text-white font-data font-bold text-xs">
-            {grupo.codigo}
-          </span>
-          <span className="font-body font-semibold text-sm text-text-primary truncate">{grupo.nome}</span>
-          <span className="font-body text-xs text-text-tertiary ml-1 flex-shrink-0">
-            · {grupo.filiais.length} {grupo.filiais.length === 1 ? 'filial' : 'filiais'}
-          </span>
+          <div className={`flex items-center justify-center w-4 h-4 flex-shrink-0 transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`}>
+            <ChevronDown className="w-4 h-4 text-text-tertiary" />
+          </div>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="inline-flex items-center justify-center min-w-[2rem] h-6 px-2 rounded-md bg-mos-700 text-white font-data font-bold text-xs tracking-wider flex-shrink-0">
+              {grupo.codigo}
+            </span>
+            <span className="font-body font-semibold text-sm text-text-primary truncate">{grupo.nome}</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-surface-3 font-data text-[11px] font-semibold text-text-secondary">
+              {grupo.filiais.length}
+            </span>
+            {ativas < grupo.filiais.length && (
+              <span className="font-body text-[10px] text-text-tertiary">
+                ({grupo.filiais.length - ativas} inativa{grupo.filiais.length - ativas !== 1 ? 's' : ''})
+              </span>
+            )}
+          </div>
         </button>
 
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => onAddFilial(grupo.id)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md font-body text-xs text-text-secondary hover:text-mos-700 hover:bg-mos-50 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-body text-xs font-medium text-text-secondary hover:text-mos-700 hover:bg-mos-50 border border-transparent hover:border-mos-700/20 transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
             Filial
           </button>
+          <div className="w-px h-4 bg-surface-3 mx-0.5" />
           <button
             onClick={() => onEditGrupo(grupo)}
             className="p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors"
+            title="Editar grupo"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDeleteGrupo(grupo.id)}
             className="p-1.5 rounded-md text-text-tertiary hover:text-status-error hover:bg-status-errorLight transition-colors"
+            title="Excluir grupo"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -82,41 +98,85 @@ function GrupoRow({
 
       {/* Filiais list */}
       {expanded && (
-        <div className="divide-y divide-surface-2">
-          {grupo.filiais.length === 0 && (
-            <div className="px-10 py-4 text-center">
+        <div className="divide-y divide-surface-2 bg-white">
+          {grupo.filiais.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 gap-2">
+              <GitBranch className="w-6 h-6 text-text-disabled" />
               <p className="font-body text-xs text-text-disabled">Nenhuma filial cadastrada</p>
+              <button
+                onClick={() => onAddFilial(grupo.id)}
+                className="flex items-center gap-1 font-body text-xs text-mos-700 hover:underline"
+              >
+                <Plus className="w-3 h-3" />
+                Adicionar filial
+              </button>
             </div>
-          )}
-          {grupo.filiais.map(filial => (
-            <div key={filial.id} className="flex items-center gap-3 px-10 py-2.5 hover:bg-surface-1/50 transition-colors group">
-              <span className={`inline-flex items-center justify-center w-12 h-5 rounded font-data font-bold text-[10px] tracking-wide ${
-                filial.ativa ? 'bg-surface-2 text-text-secondary' : 'bg-surface-3 text-text-disabled opacity-60'
-              }`}>
-                {filial.codigo}
-              </span>
-              <span className={`font-body text-sm flex-1 truncate ${filial.ativa ? 'text-text-primary' : 'text-text-disabled line-through'}`}>
-                {filial.descricao}
-              </span>
-              {!filial.ativa && (
-                <span className="font-body text-[10px] text-text-tertiary italic">Inativa</span>
-              )}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => onEditFilial(filial)}
-                  className="p-1 rounded text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => onDeleteFilial(filial.id)}
-                  className="p-1 rounded text-text-tertiary hover:text-status-error hover:bg-status-errorLight transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
+          ) : (
+            grupo.filiais.map(filial => (
+              <div
+                key={filial.id}
+                className={`flex items-center gap-3 pl-11 pr-4 py-3 transition-colors group ${
+                  filial.ativa ? 'hover:bg-surface-1/60' : 'hover:bg-surface-1/40 opacity-70'
+                }`}
+              >
+                {/* Connector line visual */}
+                <div className="relative flex-shrink-0 w-4 h-full">
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-px bg-surface-3" />
+                </div>
+
+                <span className={`inline-flex items-center justify-center min-w-[3rem] h-5 px-1.5 rounded font-data font-bold text-[10px] tracking-widest flex-shrink-0 border ${
+                  filial.ativa
+                    ? 'bg-surface-1 text-text-secondary border-surface-3'
+                    : 'bg-surface-2 text-text-disabled border-surface-2 line-through'
+                }`}>
+                  {filial.codigo}
+                </span>
+
+                <span className={`font-body text-sm flex-1 truncate ${
+                  filial.ativa ? 'text-text-primary' : 'text-text-disabled line-through'
+                }`}>
+                  {filial.descricao}
+                </span>
+
+                {!filial.ativa && (
+                  <span className="font-body text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-1.5 py-0.5 bg-surface-2 rounded">
+                    Inativa
+                  </span>
+                )}
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => onToggleFilial(filial)}
+                    className={`p-1 rounded transition-colors ${
+                      filial.ativa
+                        ? 'text-text-tertiary hover:text-status-warning hover:bg-status-warningLight'
+                        : 'text-text-tertiary hover:text-status-success hover:bg-status-successLight'
+                    }`}
+                    title={filial.ativa ? 'Desativar filial' : 'Ativar filial'}
+                  >
+                    {filial.ativa
+                      ? <ToggleRight className="w-3.5 h-3.5" />
+                      : <ToggleLeft className="w-3.5 h-3.5" />
+                    }
+                  </button>
+                  <button
+                    onClick={() => onEditFilial(filial)}
+                    className="p-1 rounded text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors"
+                    title="Editar filial"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteFilial(filial.id)}
+                    className="p-1 rounded text-text-tertiary hover:text-status-error hover:bg-status-errorLight transition-colors"
+                    title="Excluir filial"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>
@@ -303,6 +363,7 @@ function FiliaisContent() {
   const [grupos, setGrupos] = useState<GrupoComFiliais[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   // Modal state
   const [grupoModal, setGrupoModal] = useState<{ open: boolean; editing?: Grupo }>({ open: false });
@@ -392,8 +453,32 @@ function FiliaisContent() {
     setGrupos(prev => prev.map(g => ({ ...g, filiais: g.filiais.filter(f => f.id !== id) })));
   }
 
+  async function toggleFilial(filial: Filial) {
+    await supabase.from('filiais').update({ ativa: !filial.ativa }).eq('id', filial.id);
+    setGrupos(prev => prev.map(g => ({
+      ...g,
+      filiais: g.filiais.map(f => f.id === filial.id ? { ...f, ativa: !f.ativa } : f),
+    })));
+  }
+
   const totalFiliais = grupos.reduce((sum, g) => sum + g.filiais.length, 0);
   const filiaisAtivas = grupos.reduce((sum, g) => sum + g.filiais.filter(f => f.ativa).length, 0);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return grupos;
+    const q = search.toLowerCase();
+    return grupos
+      .map(g => {
+        const grupoMatch = g.codigo.toLowerCase().includes(q) || g.nome.toLowerCase().includes(q);
+        const filiaisMatch = g.filiais.filter(f =>
+          f.codigo.toLowerCase().includes(q) || f.descricao.toLowerCase().includes(q)
+        );
+        if (grupoMatch) return g;
+        if (filiaisMatch.length > 0) return { ...g, filiais: filiaisMatch };
+        return null;
+      })
+      .filter(Boolean) as GrupoComFiliais[];
+  }, [grupos, search]);
 
   return (
     <div className="p-6 space-y-6">
@@ -401,7 +486,7 @@ function FiliaisContent() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1">CONFIGURAÇÕES</p>
-          <h1 className="font-display font-extrabold text-3xl text-text-primary tracking-tight">FILIAIS</h1>
+          <h1 className="font-display font-extrabold text-3xl text-text-primary tracking-tight">GRUPOS & FILIAIS</h1>
           <p className="font-body text-sm text-text-tertiary mt-1">
             {grupos.length} {grupos.length === 1 ? 'grupo' : 'grupos'} ·{' '}
             {totalFiliais} {totalFiliais === 1 ? 'filial' : 'filiais'} ·{' '}
@@ -417,6 +502,38 @@ function FiliaisContent() {
         </button>
       </div>
 
+      {/* Stats */}
+      {grupos.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Grupos', value: grupos.length, color: 'bg-mos-700 text-white' },
+            { label: 'Filiais Ativas', value: filiaisAtivas, color: 'bg-status-successLight text-status-success' },
+            { label: 'Filiais Inativas', value: totalFiliais - filiaisAtivas, color: 'bg-surface-2 text-text-tertiary' },
+          ].map(s => (
+            <div key={s.label} className="card px-4 py-3 flex items-center gap-3">
+              <span className={`inline-flex items-center justify-center w-10 h-8 rounded-lg font-data font-bold text-lg ${s.color}`}>
+                {s.value}
+              </span>
+              <span className="font-body text-xs text-text-secondary">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Search */}
+      {grupos.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
+          <input
+            type="text"
+            placeholder="Buscar grupo ou filial..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700 transition-colors shadow-card"
+          />
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="space-y-3">
@@ -424,10 +541,16 @@ function FiliaisContent() {
             <div key={i} className="card h-14 animate-pulse" />
           ))}
         </div>
+      ) : filtered.length === 0 && search ? (
+        <div className="py-16 text-center">
+          <Search className="w-8 h-8 text-text-disabled mx-auto mb-3" />
+          <p className="font-body text-sm text-text-tertiary">Nenhum resultado para "{search}"</p>
+        </div>
       ) : grupos.length === 0 ? (
         <div className="py-20 text-center">
           <GitBranch className="w-10 h-10 text-text-disabled mx-auto mb-3" />
-          <p className="font-body text-sm text-text-tertiary mb-4">Nenhum grupo cadastrado</p>
+          <p className="font-body text-sm text-text-tertiary mb-1">Nenhum grupo cadastrado</p>
+          <p className="font-body text-xs text-text-disabled mb-4">Crie um grupo para organizar suas filiais</p>
           <button
             onClick={() => setGrupoModal({ open: true })}
             className="btn-primary flex items-center gap-2 mx-auto"
@@ -438,15 +561,17 @@ function FiliaisContent() {
         </div>
       ) : (
         <div className="space-y-3">
-          {grupos.map(g => (
+          {filtered.map(g => (
             <GrupoRow
               key={g.id}
               grupo={g}
+              searchActive={!!search}
               onEditGrupo={grupo => setGrupoModal({ open: true, editing: grupo })}
               onDeleteGrupo={deleteGrupo}
               onAddFilial={grupoId => setFilialModal({ open: true, grupoId })}
               onEditFilial={filial => setFilialModal({ open: true, editing: filial })}
               onDeleteFilial={deleteFilial}
+              onToggleFilial={toggleFilial}
             />
           ))}
         </div>
