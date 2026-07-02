@@ -36,6 +36,7 @@ export interface EnergiaSala {
   responsavel: string;
   cpf_cnpj: string;
   email: string;
+  email_fatura: string;
   telefone: string;
   valor_aluguel: number;
   tarifa_override: number | null;
@@ -49,6 +50,15 @@ export const MEDICAO_TIPO_LABEL: Record<MedicaoTipo, string> = {
   relogio_proprio: 'Relógio separado',
 };
 
+export type IndiceReajuste = 'igpm' | 'ipca' | 'inpc' | 'fixo';
+
+export const INDICE_REAJUSTE_LABEL: Record<IndiceReajuste, string> = {
+  igpm: 'IGP-M',
+  ipca: 'IPCA',
+  inpc: 'INPC',
+  fixo: 'Percentual Fixo',
+};
+
 export interface EnergiaContratoLocacao {
   id: string;
   sala_id: string;
@@ -59,6 +69,28 @@ export interface EnergiaContratoLocacao {
   ano_fim: number;
   observacoes: string;
   ativo: boolean;
+  indice_reajuste: IndiceReajuste;
+  percentual_reajuste: number;
+  contrato_origem_id: string | null;
+  created_at: string;
+}
+
+export type EnergiaSalaDocumentoTipo = 'contrato_gerado' | 'documento_locatario' | 'outro';
+
+export const DOCUMENTO_TIPO_LABEL: Record<EnergiaSalaDocumentoTipo, string> = {
+  contrato_gerado: 'Contrato Gerado',
+  documento_locatario: 'Documento do Locatário',
+  outro: 'Outro',
+};
+
+export interface EnergiaSalaDocumento {
+  id: string;
+  sala_id: string;
+  nome: string;
+  tipo: EnergiaSalaDocumentoTipo;
+  url: string;
+  tamanho_bytes: number | null;
+  mime_type: string;
   created_at: string;
 }
 

@@ -4,16 +4,19 @@ import {
   ArrowLeft, DoorOpen, Zap, Plus, Camera, CreditCard as Edit,
   Home, Check, Loader2, Trash2, UserCheck, UserX,
   Archive, ArchiveRestore, CalendarRange, AlertTriangle, User, Mail, Phone, Hash,
-  SplitSquareVertical, Gauge, Pencil, X,
+  SplitSquareVertical, Gauge, Pencil, X, TrendingUp, FileText, History, Send,
 } from 'lucide-react';
 import { ConsumoSparkline } from '../components/ConsumoSparkline';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaSalaModal } from '../components/NovaSalaModal';
 import { NovoContratoLocacaoModal } from '../components/NovoContratoLocacaoModal';
+import { ContratoLocacaoPDF } from '../components/ContratoLocacaoPDF';
+import { SalaDocumentosCard } from '../components/SalaDocumentosCard';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatKWh, formatMesAno, getMesAtual, getAnoAtual } from '../utils/calculos';
 import { useTiposSala } from '../hooks/useTiposSala';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
+import { INDICE_REAJUSTE_LABEL } from '../types';
 import type { EnergiaSala, EnergiaMedicao, EnergiaUnidade, EnergiaAluguel, EnergiaContratoLocacao, MedicaoTipo } from '../types';
 
 export default function SalaDetalhe() {
@@ -27,11 +30,15 @@ export default function SalaDetalhe() {
   const [medicoes, setMedicoes] = useState<EnergiaMedicao[]>([]);
   const [alugueis, setAlugueis] = useState<EnergiaAluguel[]>([]);
   const [contrato, setContrato] = useState<EnergiaContratoLocacao | null>(null);
+  const [historicContratos, setHistoricContratos] = useState<EnergiaContratoLocacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [fotoModal, setFotoModal] = useState<string | null>(null);
   const [showEditSala, setShowEditSala] = useState(false);
   const [showConfirmArquivar, setShowConfirmArquivar] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
+  const [showReajuste, setShowReajuste] = useState(false);
+  const [showContratoPDF, setShowContratoPDF] = useState(false);
+  const [showHistorico, setShowHistorico] = useState(false);
   const [showConfirmEncerrar, setShowConfirmEncerrar] = useState(false);
   const [encerrandoContrato, setEncerrandoContrato] = useState(false);
   const [deletingAluguelId, setDeletingAluguelId] = useState<string | null>(null);
@@ -46,16 +53,18 @@ export default function SalaDetalhe() {
     const fetchedSala = sData as EnergiaSala | null;
     setSala(fetchedSala);
     if (fetchedSala) {
-      const [uRes, mRes, aRes, cRes] = await Promise.all([
+      const [uRes, mRes, aRes, cRes, hRes] = await Promise.all([
         supabase.from('energia_unidades').select('*').eq('id', fetchedSala.unidade_id).maybeSingle(),
         supabase.from('energia_medicoes').select('*').eq('sala_id', id).order('ano', { ascending: false }).order('mes', { ascending: false }),
         supabase.from('energia_alugueis').select('*').eq('sala_id', id).order('ano', { ascending: false }).order('mes', { ascending: false }),
         supabase.from('energia_contratos_locacao').select('*').eq('sala_id', id).eq('ativo', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('energia_contratos_locacao').select('*').eq('sala_id', id).eq('ativo', false).order('created_at', { ascending: false }),
       ]);
       setUnidade(uRes.data as EnergiaUnidade | null);
       setMedicoes((mRes.data as EnergiaMedicao[]) || []);
       setAlugueis((aRes.data as EnergiaAluguel[]) || []);
       setContrato(cRes.data as EnergiaContratoLocacao | null);
+      setHistoricContratos((hRes.data as EnergiaContratoLocacao[]) || []);
     }
     setLoading(false);
   }
@@ -64,8 +73,10 @@ export default function SalaDetalhe() {
 
   const totalConsumo = medicoes.reduce((s, m) => s + Number(m.consumo), 0);
   const totalCusto = medicoes.reduce((s, m) => s + Number(m.valor_total), 0);
-  const totalAluguel = alugueis.reduce((s, a) => s + Number(a.valor), 0);
+  const totalAluguelOrcado = alugueis.reduce((s, a) => s + Number(a.valor), 0);
   const aluguelPago = alugueis.filter(a => a.pago).length;
+  const aluguelRealizado = alugueis.filter(a => a.pago).reduce((s, a) => s + Number(a.valor), 0);
+  const adimplenciaPct = alugueis.length > 0 ? (aluguelPago / alugueis.length) * 100 : 0;
 
   async function handleArquivar() {
     if (!sala || !id) return;
@@ -129,6 +140,16 @@ export default function SalaDetalhe() {
     fetchData();
   }
 
+  const adimplenciaColor =
+    adimplenciaPct >= 90 ? 'text-status-success' :
+    adimplenciaPct >= 70 ? 'text-status-warning' :
+    'text-status-error';
+
+  const adimplenciaBarColor =
+    adimplenciaPct >= 90 ? 'bg-status-success' :
+    adimplenciaPct >= 70 ? 'bg-status-warning' :
+    'bg-status-error';
+
   if (loading) {
     return (
       <EnergiaLayout title="Sala" subtitle="Detalhes e medições">
@@ -174,7 +195,6 @@ export default function SalaDetalhe() {
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Left: back + name */}
           <div className="flex items-start gap-3">
             <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-surface-2 transition-colors mt-0.5">
               <ArrowLeft className="w-4 h-4 text-text-tertiary" />
@@ -333,7 +353,6 @@ export default function SalaDetalhe() {
         {/* KPIs */}
         {isRelógioProprio ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Info card */}
             <div className="card p-5 flex items-start gap-4 border-blue-100 bg-blue-50/50 sm:col-span-2">
               <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <SplitSquareVertical className="w-5 h-5 text-blue-600" />
@@ -348,14 +367,29 @@ export default function SalaDetalhe() {
                 <Home className="w-5 h-5 text-text-secondary" />
               </div>
               <div>
-                <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(totalAluguel)}</p>
+                <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(totalAluguelOrcado)}</p>
                 <p className="font-body text-xs text-text-tertiary">Aluguel ({aluguelPago}/{alugueis.length} pagos)</p>
               </div>
             </div>
+            {alugueis.length > 0 && (
+              <div className="card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-text-secondary" />
+                    <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest">ADIMPLÊNCIA</p>
+                  </div>
+                  <span className={`font-data text-base font-bold ${adimplenciaColor}`}>{adimplenciaPct.toFixed(0)}%</span>
+                </div>
+                <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${adimplenciaBarColor}`} style={{ width: `${adimplenciaPct}%` }} />
+                </div>
+                <p className="font-body text-xs text-text-tertiary mt-2">{formatCurrencyBR(aluguelRealizado)} recebido de {formatCurrencyBR(totalAluguelOrcado)}</p>
+              </div>
+            )}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="card p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-surface-1 flex items-center justify-center flex-shrink-0">
                   <Zap className="w-5 h-5 text-text-secondary" />
@@ -388,19 +422,43 @@ export default function SalaDetalhe() {
                   <Home className="w-5 h-5 text-text-secondary" />
                 </div>
                 <div>
-                  <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(totalAluguel)}</p>
-                  <p className="font-body text-xs text-text-tertiary">Aluguel ({aluguelPago}/{alugueis.length} pagos)</p>
+                  <p className="font-display font-bold text-xl text-text-primary">{formatCurrencyBR(totalAluguelOrcado)}</p>
+                  <p className="font-body text-xs text-text-tertiary">Aluguel Cobrado</p>
                 </div>
               </div>
+              {alugueis.length > 0 ? (
+                <div className="card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-text-secondary" />
+                      <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest">ADIMPLÊNCIA</p>
+                    </div>
+                    <span className={`font-data text-base font-bold ${adimplenciaColor}`}>{adimplenciaPct.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${adimplenciaBarColor}`} style={{ width: `${adimplenciaPct}%` }} />
+                  </div>
+                  <p className="font-body text-xs text-text-tertiary mt-2">{formatCurrencyBR(aluguelRealizado)} recebido</p>
+                </div>
+              ) : (
+                <div className="card p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-surface-1 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 text-text-secondary" />
+                  </div>
+                  <div>
+                    <p className="font-display font-bold text-xl text-text-primary">—</p>
+                    <p className="font-body text-xs text-text-tertiary">Adimplência</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Consumo sparkline */}
             {medicoes.length >= 2 && <ConsumoSparkline data={medicoes} />}
           </>
         )}
 
         {/* Locatário */}
-        {(sala.responsavel || sala.cpf_cnpj || sala.email || sala.telefone) && (
+        {(sala.responsavel || sala.cpf_cnpj || sala.email || sala.telefone || sala.email_fatura) && (
           <div className="card overflow-hidden">
             <div className="px-5 py-3 border-b border-surface-2 bg-surface-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -463,12 +521,23 @@ export default function SalaDetalhe() {
                     </div>
                   </div>
                 )}
+                {sala.email_fatura && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Send className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-widest mb-0.5">EMAIL FATURA</p>
+                      <a href={`mailto:${sala.email_fatura}`} className="font-body text-sm text-blue-600 hover:underline truncate block">{sala.email_fatura}</a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Contrato de Locacao */}
+        {/* Contrato de Locação */}
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-surface-2 bg-surface-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -477,13 +546,38 @@ export default function SalaDetalhe() {
             </div>
             {isAdmin && (
               <div className="flex items-center gap-3">
-                {contrato && (
+                {historicContratos.length > 0 && (
                   <button
-                    onClick={() => setShowConfirmEncerrar(true)}
-                    className="font-body text-xs font-semibold text-status-error hover:text-status-error/70 transition-colors"
+                    onClick={() => setShowHistorico(v => !v)}
+                    className="flex items-center gap-1.5 font-body text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
                   >
-                    Encerrar
+                    <History className="w-3.5 h-3.5" />
+                    Histórico ({historicContratos.length})
                   </button>
+                )}
+                {contrato && (
+                  <>
+                    <button
+                      onClick={() => setShowContratoPDF(true)}
+                      className="flex items-center gap-1.5 font-body text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Gerar PDF
+                    </button>
+                    <button
+                      onClick={() => setShowReajuste(true)}
+                      className="flex items-center gap-1.5 font-body text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      Reajuste
+                    </button>
+                    <button
+                      onClick={() => setShowConfirmEncerrar(true)}
+                      className="font-body text-xs font-semibold text-status-error hover:text-status-error/70 transition-colors"
+                    >
+                      Encerrar
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => setShowContrato(true)}
@@ -497,8 +591,8 @@ export default function SalaDetalhe() {
           </div>
 
           {contrato ? (
-            <div className="px-5 py-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="px-5 py-4 space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div>
                   <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-widest mb-1">VALOR MENSAL</p>
                   <p className="font-data text-base font-bold text-text-primary">{formatCurrencyBR(Number(contrato.valor_mensal))}</p>
@@ -512,6 +606,15 @@ export default function SalaDetalhe() {
                   <p className="font-data text-base font-bold text-text-primary">{formatMesAno(contrato.mes_fim, contrato.ano_fim)}</p>
                 </div>
                 <div>
+                  <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-widest mb-1">REAJUSTE</p>
+                  <p className="font-data text-sm font-bold text-text-primary">
+                    {INDICE_REAJUSTE_LABEL[contrato.indice_reajuste] ?? 'Fixo'}
+                    {Number(contrato.percentual_reajuste) > 0 && (
+                      <span className="text-text-tertiary font-normal ml-1">({Number(contrato.percentual_reajuste).toFixed(2)}%)</span>
+                    )}
+                  </p>
+                </div>
+                <div>
                   <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-widest mb-1">TOTAL DO CONTRATO</p>
                   <p className="font-data text-base font-bold text-text-primary">
                     {formatCurrencyBR(Number(contrato.valor_mensal) * alugueis.length)}
@@ -519,7 +622,7 @@ export default function SalaDetalhe() {
                 </div>
               </div>
               {contrato.observacoes && (
-                <p className="font-body text-xs text-text-tertiary mt-3">{contrato.observacoes}</p>
+                <p className="font-body text-xs text-text-tertiary">{contrato.observacoes}</p>
               )}
             </div>
           ) : (
@@ -533,76 +636,111 @@ export default function SalaDetalhe() {
               )}
             </div>
           )}
-        </div>
 
-        {/* Medicoes table — hidden for rooms with separate meters */}
-        {!isRelógioProprio && <div className="card overflow-hidden">
-          <div className="px-5 py-3 border-b border-surface-2 bg-surface-1">
-            <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest">HISTÓRICO DE MEDIÇÕES ({medicoes.length})</p>
-          </div>
-          {medicoes.length === 0 ? (
-            <div className="p-10 text-center">
-              <Zap className="w-10 h-10 text-text-disabled mx-auto mb-3" />
-              <p className="font-body text-sm text-text-tertiary">Nenhuma medição registrada</p>
-              <button onClick={() => navigate(`/energia/medicoes?sala=${id}`)} className="btn-primary mt-4 text-sm">
-                Registrar Primeira Medição
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-surface-2 bg-surface-0">
-                    <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">COMPETÊNCIA</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">LEIT. ANT.</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">LEIT. ATUAL</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">CONSUMO</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">TARIFA</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">VALOR</th>
-                    <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">FOTO</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-2">
-                  {medicoes.map(m => {
-                    const isZero = Number(m.consumo) === 0;
-                    return (
-                      <tr key={m.id} className={`hover:bg-surface-1/60 transition-colors ${isZero ? 'bg-status-warningLight/40' : ''}`}>
-                        <td className="py-3 px-4 font-body text-sm text-text-primary font-medium">{formatMesAno(m.mes, m.ano)}</td>
-                        <td className="py-3 px-4 font-data text-sm text-text-secondary text-right">{Number(m.leitura_anterior).toLocaleString('pt-BR')}</td>
-                        <td className="py-3 px-4 font-data text-sm text-text-secondary text-right">{Number(m.leitura_atual).toLocaleString('pt-BR')}</td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {isZero && <AlertTriangle className="w-3.5 h-3.5 text-status-warning flex-shrink-0" title="Consumo zerado" />}
-                            <span className={`font-data text-sm font-semibold ${isZero ? 'text-status-warning' : 'text-mos-700'}`}>
-                              {formatKWh(Number(m.consumo))}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-data text-xs text-text-tertiary text-right">
-                          {Number(m.tarifa).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 px-4 font-data text-sm text-text-primary font-semibold text-right">{formatCurrencyBR(Number(m.valor_total))}</td>
-                        <td className="py-3 px-4 text-center">
-                          {m.foto_url ? (
-                            <button onClick={() => setFotoModal(m.foto_url)} title="Ver foto" className="inline-block">
-                              <img
-                                src={m.foto_url}
-                                alt="Foto medidor"
-                                className="w-9 h-9 object-cover rounded-md border border-surface-3 hover:opacity-80 transition-opacity cursor-pointer mx-auto"
-                              />
-                            </button>
-                          ) : (
-                            <span className="font-body text-text-disabled text-xs">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Histórico accordion */}
+          {showHistorico && historicContratos.length > 0 && (
+            <div className="border-t border-surface-2 bg-surface-0">
+              <div className="px-5 py-2 bg-surface-1 border-b border-surface-2">
+                <p className="font-body text-[10px] font-semibold text-text-tertiary tracking-widest">CONTRATOS ENCERRADOS</p>
+              </div>
+              <div className="divide-y divide-surface-2">
+                {historicContratos.map(c => (
+                  <div key={c.id} className="px-5 py-3 flex flex-wrap items-center gap-4">
+                    <div>
+                      <p className="font-body text-[10px] text-text-tertiary font-semibold tracking-widest mb-0.5">PERÍODO</p>
+                      <p className="font-data text-sm text-text-secondary">{formatMesAno(c.mes_inicio, c.ano_inicio)} → {formatMesAno(c.mes_fim, c.ano_fim)}</p>
+                    </div>
+                    <div>
+                      <p className="font-body text-[10px] text-text-tertiary font-semibold tracking-widest mb-0.5">VALOR</p>
+                      <p className="font-data text-sm font-semibold text-text-primary">{formatCurrencyBR(Number(c.valor_mensal))}/mês</p>
+                    </div>
+                    <div>
+                      <p className="font-body text-[10px] text-text-tertiary font-semibold tracking-widest mb-0.5">REAJUSTE</p>
+                      <span className="font-body text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {INDICE_REAJUSTE_LABEL[c.indice_reajuste] ?? 'Fixo'}
+                        {Number(c.percentual_reajuste) > 0 && ` ${Number(c.percentual_reajuste).toFixed(1)}%`}
+                      </span>
+                    </div>
+                    {c.contrato_origem_id && (
+                      <span className="font-body text-[10px] px-2 py-0.5 rounded-full bg-surface-2 text-text-tertiary border border-surface-3">Reajustado</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>}
+        </div>
+
+        {/* Medições table */}
+        {!isRelógioProprio && (
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3 border-b border-surface-2 bg-surface-1">
+              <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest">HISTÓRICO DE MEDIÇÕES ({medicoes.length})</p>
+            </div>
+            {medicoes.length === 0 ? (
+              <div className="p-10 text-center">
+                <Zap className="w-10 h-10 text-text-disabled mx-auto mb-3" />
+                <p className="font-body text-sm text-text-tertiary">Nenhuma medição registrada</p>
+                <button onClick={() => navigate(`/energia/medicoes?sala=${id}`)} className="btn-primary mt-4 text-sm">
+                  Registrar Primeira Medição
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-surface-2 bg-surface-0">
+                      <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">COMPETÊNCIA</th>
+                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">LEIT. ANT.</th>
+                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">LEIT. ATUAL</th>
+                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">CONSUMO</th>
+                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">TARIFA</th>
+                      <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">VALOR</th>
+                      <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">FOTO</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-2">
+                    {medicoes.map(m => {
+                      const isZero = Number(m.consumo) === 0;
+                      return (
+                        <tr key={m.id} className={`hover:bg-surface-1/60 transition-colors ${isZero ? 'bg-status-warningLight/40' : ''}`}>
+                          <td className="py-3 px-4 font-body text-sm text-text-primary font-medium">{formatMesAno(m.mes, m.ano)}</td>
+                          <td className="py-3 px-4 font-data text-sm text-text-secondary text-right">{Number(m.leitura_anterior).toLocaleString('pt-BR')}</td>
+                          <td className="py-3 px-4 font-data text-sm text-text-secondary text-right">{Number(m.leitura_atual).toLocaleString('pt-BR')}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {isZero && <AlertTriangle className="w-3.5 h-3.5 text-status-warning flex-shrink-0" title="Consumo zerado" />}
+                              <span className={`font-data text-sm font-semibold ${isZero ? 'text-status-warning' : 'text-mos-700'}`}>
+                                {formatKWh(Number(m.consumo))}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-data text-xs text-text-tertiary text-right">
+                            {Number(m.tarifa).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3 px-4 font-data text-sm text-text-primary font-semibold text-right">{formatCurrencyBR(Number(m.valor_total))}</td>
+                          <td className="py-3 px-4 text-center">
+                            {m.foto_url ? (
+                              <button onClick={() => setFotoModal(m.foto_url)} title="Ver foto" className="inline-block">
+                                <img
+                                  src={m.foto_url}
+                                  alt="Foto medidor"
+                                  className="w-9 h-9 object-cover rounded-md border border-surface-3 hover:opacity-80 transition-opacity cursor-pointer mx-auto"
+                                />
+                              </button>
+                            ) : (
+                              <span className="font-body text-text-disabled text-xs">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Alugueis table */}
         <div className="card overflow-hidden">
@@ -623,7 +761,8 @@ export default function SalaDetalhe() {
                 <thead>
                   <tr className="border-b border-surface-2 bg-surface-0">
                     <th className="text-left py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">COMPETÊNCIA</th>
-                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">VALOR</th>
+                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">ORÇADO</th>
+                    <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">REALIZADO</th>
                     <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">STATUS</th>
                     <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÕES</th>
                   </tr>
@@ -632,7 +771,13 @@ export default function SalaDetalhe() {
                   {alugueis.map(a => (
                     <tr key={a.id} className="hover:bg-surface-1/60 transition-colors">
                       <td className="py-3 px-4 font-body text-sm text-text-primary font-medium">{formatMesAno(a.mes, a.ano)}</td>
-                      <td className="py-3 px-4 font-data text-sm text-text-primary font-semibold text-right">{formatCurrencyBR(Number(a.valor))}</td>
+                      <td className="py-3 px-4 font-data text-sm text-text-secondary text-right">{formatCurrencyBR(Number(a.valor))}</td>
+                      <td className="py-3 px-4 font-data text-sm font-semibold text-right">
+                        {a.pago
+                          ? <span className="text-status-success">{formatCurrencyBR(Number(a.valor))}</span>
+                          : <span className="text-text-disabled">—</span>
+                        }
+                      </td>
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={() => handleTogglePago(a)}
@@ -657,10 +802,24 @@ export default function SalaDetalhe() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="border-t-2 border-surface-3 bg-surface-1">
+                  <tr>
+                    <td className="py-3 px-4 font-body text-xs font-semibold text-text-tertiary tracking-widest">TOTAL</td>
+                    <td className="py-3 px-4 font-data text-sm font-bold text-text-secondary text-right">{formatCurrencyBR(totalAluguelOrcado)}</td>
+                    <td className="py-3 px-4 font-data text-sm font-bold text-status-success text-right">{formatCurrencyBR(aluguelRealizado)}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`font-data text-sm font-bold ${adimplenciaColor}`}>{adimplenciaPct.toFixed(0)}%</span>
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
         </div>
+
+        {/* Documentos */}
+        <SalaDocumentosCard salaId={id!} isAdmin={isAdmin} />
       </div>
 
       {/* Contrato Modal */}
@@ -670,6 +829,27 @@ export default function SalaDetalhe() {
           initial={contrato}
           onClose={() => setShowContrato(false)}
           onSaved={() => { setShowContrato(false); fetchData(); }}
+        />
+      )}
+
+      {/* Reajuste Modal */}
+      {showReajuste && sala && contrato && (
+        <NovoContratoLocacaoModal
+          sala={sala}
+          initial={contrato}
+          isReajuste
+          onClose={() => setShowReajuste(false)}
+          onSaved={() => { setShowReajuste(false); fetchData(); }}
+        />
+      )}
+
+      {/* Contrato PDF */}
+      {showContratoPDF && sala && contrato && (
+        <ContratoLocacaoPDF
+          sala={sala}
+          contrato={contrato}
+          unidade={unidade}
+          onClose={() => setShowContratoPDF(false)}
         />
       )}
 
@@ -684,7 +864,7 @@ export default function SalaDetalhe() {
               </div>
               <div>
                 <h3 className="font-display font-bold text-lg text-text-primary">Encerrar contrato</h3>
-                <p className="font-body text-xs text-text-tertiary">Os registros futuros nao pagos serao removidos</p>
+                <p className="font-body text-xs text-text-tertiary">Os registros futuros não pagos serão removidos</p>
               </div>
             </div>
             <p className="font-body text-sm text-text-secondary">
@@ -746,7 +926,7 @@ export default function SalaDetalhe() {
               </div>
             </div>
             <p className="font-body text-sm text-text-secondary">
-              Tem certeza que deseja arquivar <strong className="text-text-primary">{sala?.nome}</strong>? A sala sera marcada como desocupada e removida das listagens ativas.
+              Tem certeza que deseja arquivar <strong className="text-text-primary">{sala?.nome}</strong>? A sala será marcada como desocupada e removida das listagens ativas.
             </p>
             <div className="flex items-center justify-end gap-3">
               <button onClick={() => setShowConfirmArquivar(false)} className="btn-secondary">Cancelar</button>
