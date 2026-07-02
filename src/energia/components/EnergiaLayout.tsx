@@ -20,14 +20,14 @@ interface TabDef {
 }
 
 const ENERGIA_TABS: TabDef[] = [
-  { to: '/energia/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
-  { to: '/energia/unidades',  label: 'Unidades',  icon: Building2,       adminOnly: true  },
-  { to: '/energia/salas',     label: 'Salas',     icon: DoorOpen,        adminOnly: false },
-  { to: '/energia/medicoes',  label: 'Medições',  icon: Zap,             adminOnly: false },
-  { to: '/energia/alugueis',  label: 'Aluguéis',  icon: Home,            adminOnly: false },
-  { to: '/energia/faturas',   label: 'Faturas',   icon: Receipt,         adminOnly: false },
-  { to: '/energia/relatorios',label: 'Relatórios',icon: FileText,        adminOnly: false },
-  { to: '/energia/usuarios',  label: 'Usuários',  icon: Users,           adminOnly: true  },
+  { to: '/imoveis/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
+  { to: '/imoveis/unidades',  label: 'Unidades',  icon: Building2,       adminOnly: true  },
+  { to: '/imoveis/salas',     label: 'Salas',     icon: DoorOpen,        adminOnly: false },
+  { to: '/imoveis/medicoes',  label: 'Medições',  icon: Zap,             adminOnly: false },
+  { to: '/imoveis/alugueis',  label: 'Aluguéis',  icon: Home,            adminOnly: false },
+  { to: '/imoveis/faturas',   label: 'Faturas',   icon: Receipt,         adminOnly: false },
+  { to: '/imoveis/relatorios',label: 'Relatórios',icon: FileText,        adminOnly: false },
+  { to: '/imoveis/usuarios',  label: 'Usuários',  icon: Users,           adminOnly: true  },
 ];
 
 function EnergiaTabsBar() {
@@ -59,7 +59,7 @@ function EnergiaTabsBar() {
             >
               <tab.icon className="w-4 h-4 flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
               {tab.label}
-              {tab.to === '/energia/medicoes' && pendentes.length > 0 && (
+              {tab.to === '/imoveis/medicoes' && pendentes.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-status-error text-white font-data text-[10px] font-bold">
                   {pendentes.length}
                 </span>

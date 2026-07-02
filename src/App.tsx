@@ -29,6 +29,7 @@ export default function App() {
         <Route path="/cotacoes/:id"     element={<CotacaoComparativo />} />
 
         {/* Módulos */}
+        <Route path="/imoveis/*"        element={<EnergiaApp />} />
         <Route path="/energia/*"        element={<EnergiaApp />} />
         <Route path="/chamados"         element={<Chamados />} />
         <Route path="/checklist"        element={<Checklist />} />

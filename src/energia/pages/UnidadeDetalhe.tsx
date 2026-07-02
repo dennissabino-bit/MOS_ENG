@@ -91,7 +91,7 @@ export default function UnidadeDetalhe() {
       <EnergiaLayout title="Unidade" subtitle="">
         <div className="p-6">
           <p className="font-body text-sm text-text-tertiary">Unidade não encontrada.</p>
-          <button onClick={() => navigate('/energia/unidades')} className="btn-primary mt-4">Voltar</button>
+          <button onClick={() => navigate('/imoveis/unidades')} className="btn-primary mt-4">Voltar</button>
         </div>
       </EnergiaLayout>
     );
@@ -106,7 +106,7 @@ export default function UnidadeDetalhe() {
         {/* Back + title */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <button onClick={() => navigate('/energia/unidades')} className="p-2 rounded-lg hover:bg-surface-2 transition-colors mt-0.5">
+            <button onClick={() => navigate('/imoveis/unidades')} className="p-2 rounded-lg hover:bg-surface-2 transition-colors mt-0.5">
               <ArrowLeft className="w-4 h-4 text-text-tertiary" />
             </button>
             <div>
@@ -205,7 +205,7 @@ export default function UnidadeDetalhe() {
               {salas.map(sala => (
                 <div
                   key={sala.id}
-                  onClick={() => navigate(`/energia/salas/${sala.id}`)}
+                  onClick={() => navigate(`/imoveis/salas/${sala.id}`)}
                   className="flex items-center justify-between px-5 py-4 hover:bg-surface-1 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-3 min-w-0">

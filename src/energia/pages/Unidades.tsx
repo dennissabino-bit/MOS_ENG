@@ -72,7 +72,7 @@ export default function Unidades() {
             {filtered.map(u => (
               <div
                 key={u.id}
-                onClick={() => navigate(`/energia/unidades/${u.id}`)}
+                onClick={() => navigate(`/imoveis/unidades/${u.id}`)}
                 className="card p-5 hover:shadow-card-hover transition-all duration-200 cursor-pointer group"
               >
                 <div className="flex items-start justify-between mb-3">

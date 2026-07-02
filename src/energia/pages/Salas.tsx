@@ -264,7 +264,7 @@ export default function Salas() {
             {filtered.map(sala => (
               <div
                 key={sala.id}
-                onClick={() => navigate(`/energia/salas/${sala.id}`)}
+                onClick={() => navigate(`/imoveis/salas/${sala.id}`)}
                 className="flex items-center justify-between px-5 py-4 hover:bg-surface-1 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-3 min-w-0">

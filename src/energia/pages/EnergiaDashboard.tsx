@@ -348,7 +348,7 @@ export default function EnergiaDashboard() {
 
   if (loading) {
     return (
-      <EnergiaLayout title="Dashboard" subtitle="Resumo de consumo de energia">
+      <EnergiaLayout title="Dashboard" subtitle="Resumo de imóveis">
         <div className="p-6 space-y-6">
           {/* Header skeleton */}
           <div className="space-y-2">
@@ -404,7 +404,7 @@ export default function EnergiaDashboard() {
   }
 
   return (
-    <EnergiaLayout title="Dashboard" subtitle="Resumo de consumo de energia e locação">
+    <EnergiaLayout title="Dashboard" subtitle="Resumo de imóveis e locação">
       <div className="p-6 space-y-6">
 
         {/* Header */}

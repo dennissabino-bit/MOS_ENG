@@ -16,7 +16,7 @@ export default function EnergiaLogin() {
     setLoading(true);
     const success = await login(email, senha);
     setLoading(false);
-    if (success) navigate('/energia/dashboard');
+    if (success) navigate('/imoveis/dashboard');
   }
 
   return (

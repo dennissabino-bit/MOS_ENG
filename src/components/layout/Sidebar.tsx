@@ -47,7 +47,7 @@ const OBRAS_ITEMS: NavItem[] = [
 ];
 
 const MODULE_ITEMS: NavItem[] = [
-  { to: '/energia',  icon: Zap,            label: 'Energia'   },
+  { to: '/imoveis',  icon: Zap,            label: 'Imóveis'   },
   { to: '/chamados', icon: PhoneCall,       label: 'Chamados',  badge: 'Em breve' },
   { to: '/checklist',icon: ClipboardCheck, label: 'Checklist', badge: 'Em breve' },
 ];

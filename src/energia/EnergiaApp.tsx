@@ -24,7 +24,7 @@ function EnergiaRoutes() {
       <Route path="/faturas"       element={<Faturas />} />
       <Route path="/relatorios"    element={<Relatorios />} />
       <Route path="/usuarios"      element={<Usuarios />} />
-      <Route path="*"              element={<Navigate to="/energia/dashboard" replace />} />
+      <Route path="*"              element={<Navigate to="/imoveis/dashboard" replace />} />
     </Routes>
   );
 }

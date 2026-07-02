@@ -499,7 +499,7 @@ export default function Medicoes() {
                               <DoorOpen className="w-3.5 h-3.5 text-text-tertiary flex-shrink-0" />
                               <span
                                 className="font-body text-sm text-text-primary hover:text-mos-700 cursor-pointer transition-colors"
-                                onClick={() => navigate(`/energia/salas/${m.sala_id}`)}
+                                onClick={() => navigate(`/imoveis/salas/${m.sala_id}`)}
                               >
                                 {sala?.nome || '—'}
                               </span>
