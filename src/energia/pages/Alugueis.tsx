@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, Plus, Search, ChevronDown, Building2, CheckCircle2,
   Clock, AlertTriangle, FileText, Loader2, DoorOpen,
-  Square, CheckSquare, MinusSquare, Calendar, Receipt,
+  Square, CheckSquare, MinusSquare, Calendar, Receipt, BarChart2,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { FaturaDetalheModal } from '../components/FaturaDetalheModal';
+import { AluguelBarChart } from '../components/AluguelBarChart';
+import type { AluguelChartPoint } from '../components/AluguelBarChart';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatMesAno, getAnoAtual, getMesAtual } from '../utils/calculos';
@@ -312,6 +314,34 @@ export default function Alugueis() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSaving, setBulkSaving] = useState(false);
 
+  // Chart period state
+  type PeriodoAtivo = '3' | '6' | '12' | 'custom';
+  const [chartPeriodoAtivo, setChartPeriodoAtivo] = useState<PeriodoAtivo>('12');
+  const [chartPeriodoInicio, setChartPeriodoInicio] = useState(() => {
+    const m = getMesAtual(); const a = getAnoAtual();
+    const total = a * 12 + m - 11;
+    return { mes: ((total - 1) % 12) + 1, ano: Math.floor((total - 1) / 12) };
+  });
+  const [chartPeriodoFim, setChartPeriodoFim] = useState({ mes: getMesAtual(), ano: getAnoAtual() });
+  const [chartUnidadeId, setChartUnidadeId] = useState('');
+  const [chartSalaId, setChartSalaId] = useState('');
+  const periodoRef = useRef<HTMLDivElement>(null);
+
+  function applyQuickPeriodo(months: number) {
+    const m = getMesAtual(); const a = getAnoAtual();
+    const total = a * 12 + m - (months - 1);
+    setChartPeriodoInicio({ mes: ((total - 1) % 12) + 1, ano: Math.floor((total - 1) / 12) });
+    setChartPeriodoFim({ mes: m, ano: a });
+    setChartPeriodoAtivo(String(months) as PeriodoAtivo);
+  }
+
+  function isInPeriodoChart(mes: number, ano: number) {
+    const val = ano * 12 + mes;
+    const start = chartPeriodoInicio.ano * 12 + chartPeriodoInicio.mes;
+    const end = chartPeriodoFim.ano * 12 + chartPeriodoFim.mes;
+    return val >= start && val <= end;
+  }
+
   useEffect(() => { fetchData(); }, [isAdmin, user]);
   useEffect(() => { setSelectedIds(new Set()); }, [filterUnidadeId, filterSalaId, filterStatus, filterMes, filterAno, search]);
 
@@ -386,6 +416,28 @@ export default function Alugueis() {
     };
   }, [faturas]);
 
+  const chartSalasFiltradas = useMemo(() => {
+    if (!chartUnidadeId) return salas;
+    return salas.filter(s => s.unidade_id === chartUnidadeId);
+  }, [salas, chartUnidadeId]);
+
+  const chartData = useMemo((): AluguelChartPoint[] => {
+    let base = faturas;
+    if (chartUnidadeId) base = base.filter(f => f.unidade_id === chartUnidadeId);
+    if (chartSalaId) base = base.filter(f => f.sala_id === chartSalaId);
+    base = base.filter(f => isInPeriodoChart(f.mes, f.ano));
+
+    const map = new Map<string, AluguelChartPoint>();
+    for (const f of base) {
+      const key = `${f.ano}-${f.mes}`;
+      const existing = map.get(key) ?? { mes: f.mes, ano: f.ano, cobrado: 0, pago: 0 };
+      if (f.status !== 'rascunho') existing.cobrado += Number(f.valor_total);
+      if (f.status === 'paga') existing.pago += Number(f.valor_total);
+      map.set(key, existing);
+    }
+    return Array.from(map.values()).sort((a, b) => a.ano !== b.ano ? a.ano - b.ano : a.mes - b.mes);
+  }, [faturas, chartUnidadeId, chartSalaId, chartPeriodoInicio, chartPeriodoFim]);
+
   const selectableIds = useMemo(
     () => filtered.filter(f => f.status !== 'paga').map(f => f.id),
     [filtered]
@@ -445,6 +497,148 @@ export default function Alugueis() {
               Gerar Faturas
             </button>
           )}
+        </div>
+
+        {/* Chart — Evolução Mensal */}
+        <div className="bg-white border border-surface-2 rounded-2xl shadow-card overflow-hidden">
+          {/* Card header */}
+          <div className="px-5 py-4 border-b border-surface-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-mos-700/10 flex items-center justify-center flex-shrink-0">
+                  <BarChart2 className="w-4.5 h-4.5 text-mos-700" strokeWidth={2} />
+                </div>
+                <div>
+                  <p className="font-body text-[10px] font-bold text-text-secondary tracking-widest uppercase">Evolução Mensal</p>
+                  <p className="font-display font-bold text-base text-text-primary leading-tight">Cobrado vs Recebido</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Unidade filter for chart */}
+                {isAdmin && (
+                  <div className="relative">
+                    <select
+                      value={chartUnidadeId}
+                      onChange={e => { setChartUnidadeId(e.target.value); setChartSalaId(''); }}
+                      className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-3 pr-7 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-mos-700/20"
+                    >
+                      <option value="">Todas as Unidades</option>
+                      {unidades.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+                  </div>
+                )}
+                {/* Sala filter for chart */}
+                <div className="relative">
+                  <select
+                    value={chartSalaId}
+                    onChange={e => setChartSalaId(e.target.value)}
+                    className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-3 pr-7 py-1.5 font-body text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-mos-700/20"
+                  >
+                    <option value="">Todas as Salas</option>
+                    {chartSalasFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+                </div>
+
+                {/* Period pills */}
+                <div ref={periodoRef} className="flex items-center gap-0.5 bg-surface-1 rounded-lg p-1 border border-surface-2">
+                  {(['3', '6', '12'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => applyQuickPeriodo(Number(p))}
+                      className={`px-3 py-1 rounded-md font-body text-xs font-medium transition-all duration-150 ${
+                        chartPeriodoAtivo === p
+                          ? 'bg-white text-text-primary shadow-card border border-surface-3'
+                          : 'text-text-tertiary hover:text-text-secondary'
+                      }`}
+                    >
+                      {p}M
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setChartPeriodoAtivo('custom')}
+                    className={`px-3 py-1 rounded-md font-body text-xs font-medium transition-all duration-150 ${
+                      chartPeriodoAtivo === 'custom'
+                        ? 'bg-white text-text-primary shadow-card border border-surface-3'
+                        : 'text-text-tertiary hover:text-text-secondary'
+                    }`}
+                  >
+                    Personalizado
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom period picker */}
+            {chartPeriodoAtivo === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-surface-2">
+                <span className="font-body text-xs text-text-secondary">De</span>
+                <div className="relative">
+                  <select
+                    value={chartPeriodoInicio.mes}
+                    onChange={e => setChartPeriodoInicio(p => ({ ...p, mes: Number(e.target.value) }))}
+                    className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-2 pr-6 py-1 font-body text-xs text-text-primary focus:outline-none"
+                  >
+                    {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-tertiary pointer-events-none" />
+                </div>
+                <div className="relative">
+                  <select
+                    value={chartPeriodoInicio.ano}
+                    onChange={e => setChartPeriodoInicio(p => ({ ...p, ano: Number(e.target.value) }))}
+                    className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-2 pr-6 py-1 font-body text-xs text-text-primary focus:outline-none"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => getAnoAtual() - 2 + i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-tertiary pointer-events-none" />
+                </div>
+                <span className="font-body text-xs text-text-secondary">até</span>
+                <div className="relative">
+                  <select
+                    value={chartPeriodoFim.mes}
+                    onChange={e => setChartPeriodoFim(p => ({ ...p, mes: Number(e.target.value) }))}
+                    className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-2 pr-6 py-1 font-body text-xs text-text-primary focus:outline-none"
+                  >
+                    {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-tertiary pointer-events-none" />
+                </div>
+                <div className="relative">
+                  <select
+                    value={chartPeriodoFim.ano}
+                    onChange={e => setChartPeriodoFim(p => ({ ...p, ano: Number(e.target.value) }))}
+                    className="appearance-none bg-surface-1 border border-surface-3 rounded-lg pl-2 pr-6 py-1 font-body text-xs text-text-primary focus:outline-none"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => getAnoAtual() - 2 + i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-tertiary pointer-events-none" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chart body */}
+          <div className="px-5 py-5">
+            {chartData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12">
+                <BarChart2 className="w-8 h-8 text-text-disabled" />
+                <p className="font-body text-sm text-text-tertiary">Sem dados para o período selecionado.</p>
+              </div>
+            ) : (
+              <AluguelBarChart data={chartData} height={240} />
+            )}
+          </div>
         </div>
 
         {/* KPI cards */}
