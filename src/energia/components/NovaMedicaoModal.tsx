@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Zap, Loader2, Camera, Upload, AlertCircle, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { calcularConsumo, calcularValorTotal, formatCurrencyBR, formatKWh, getMesAtual, getAnoAtual } from '../utils/calculos';
-import type { EnergiaUnidade, EnergiaSala, EnergiaMedicao } from '../types';
+import type { EnergiaUnidade, EnergiaSala, EnergiaMedicao, EnergiaMedicaoStatus } from '../types';
+import { MEDICAO_STATUS_CONFIG } from '../types';
 
 interface Props {
   unidades: EnergiaUnidade[];
@@ -41,6 +42,7 @@ export function NovaMedicaoModal({ unidades, salas, isAdmin, userUnidadeId, preS
   const [tarifa, setTarifa] = useState(editingMedicao ? String(Number(editingMedicao.tarifa)) : '0.85');
   const [fotoPreview, setFotoPreview] = useState(editingMedicao?.foto_url || '');
   const [observacoes, setObservacoes] = useState(editingMedicao?.observacoes || '');
+  const [status, setStatus] = useState<EnergiaMedicaoStatus>(editingMedicao?.status ?? 'a_medir');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [loadingPrev, setLoadingPrev] = useState(false);
@@ -144,6 +146,7 @@ export function NovaMedicaoModal({ unidades, salas, isAdmin, userUnidadeId, preS
       valor_total: valorTotal,
       foto_url: fotoPreview,
       observacoes: observacoes.trim(),
+      status,
     };
     const { error: err } = await supabase.from('energia_medicoes').upsert(payload, { onConflict: 'sala_id,mes,ano' });
     setSaving(false);
@@ -365,6 +368,29 @@ export function NovaMedicaoModal({ unidades, salas, isAdmin, userUnidadeId, preS
               placeholder="Informações adicionais..."
               className="w-full px-3 py-2.5 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700 transition-colors resize-none shadow-card"
             />
+          </div>
+
+          {/* Status */}
+          <div>
+            <p className="font-body text-xs font-semibold text-text-tertiary tracking-widest mb-3">STATUS DA COBRANÇA</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {(['a_medir', 'aprovado', 'boleto_enviado', 'recebido'] as EnergiaMedicaoStatus[]).map(s => {
+                const cfg = MEDICAO_STATUS_CONFIG[s];
+                const active = status === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className={`px-3 py-2 rounded-lg border font-body text-xs font-medium transition-all ${
+                      active ? `${cfg.bg} ${cfg.text} ${cfg.border} ring-2 ring-offset-1 ${cfg.border}` : 'bg-surface-0 text-text-secondary border-surface-3 hover:bg-surface-1'
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Actions */}

@@ -7,11 +7,13 @@ import {
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaMedicaoModal } from '../components/NovaMedicaoModal';
+import { EnergiaMedicaoDetalheModal } from '../components/EnergiaMedicaoDetalheModal';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { usePendencias } from '../hooks/usePendencias';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatKWh, formatMesAno, getMesAtual, getAnoAtual } from '../utils/calculos';
 import type { EnergiaUnidade, EnergiaSala, EnergiaMedicao } from '../types';
+import { MEDICAO_STATUS_CONFIG } from '../types';
 
 const PAGE_SIZE = 20;
 const MESES_OPTS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -39,6 +41,7 @@ export default function Medicoes() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [fotoModal, setFotoModal] = useState<string | null>(null);
+  const [detalheModal, setDetalheModal] = useState<EnergiaMedicao | null>(null);
 
   const [showPendentes, setShowPendentes] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -465,6 +468,7 @@ export default function Medicoes() {
                       <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">CONSUMO</th>
                       <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">VAR. MÊS</th>
                       <th className="text-right py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">VALOR</th>
+                      <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">STATUS</th>
                       <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest hidden sm:table-cell">FOTO</th>
                       <th className="text-center py-3 px-4 font-body text-[10px] font-semibold text-text-tertiary tracking-widest">AÇÕES</th>
                     </tr>
@@ -484,7 +488,8 @@ export default function Medicoes() {
                       return (
                         <tr
                           key={m.id}
-                          className={`hover:bg-surface-1 transition-colors ${isZeroConsumption ? 'bg-status-warningLight/40' : ''}`}
+                          onClick={() => setDetalheModal(m)}
+                          className={`hover:bg-surface-1 transition-colors cursor-pointer ${isZeroConsumption ? 'bg-status-warningLight/40' : ''}`}
                         >
                           <td className="py-3 px-4">
                             <span className="font-data text-sm text-text-primary font-medium">{formatMesAno(m.mes, m.ano)}</span>
@@ -549,8 +554,18 @@ export default function Medicoes() {
                             <span className="font-data text-sm text-text-primary">{formatCurrencyBR(Number(m.valor_total))}</span>
                           </td>
                           <td className="py-3 px-4 text-center hidden sm:table-cell">
+                            {(() => {
+                              const cfg = MEDICAO_STATUS_CONFIG[m.status ?? 'a_medir'];
+                              return (
+                                <span className={`inline-flex items-center gap-1 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border} whitespace-nowrap`}>
+                                  {cfg.label}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-3 px-4 text-center hidden sm:table-cell">
                             {m.foto_url ? (
-                              <button onClick={() => setFotoModal(m.foto_url)} title="Ver foto" className="inline-block">
+                              <button onClick={e => { e.stopPropagation(); setFotoModal(m.foto_url); }} title="Ver foto" className="inline-block">
                                 <img
                                   src={m.foto_url}
                                   alt="Foto medidor"
@@ -562,7 +577,7 @@ export default function Medicoes() {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => handleEdit(m)}
                                 className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors group"
@@ -664,6 +679,19 @@ export default function Medicoes() {
             ×
           </button>
         </div>
+      )}
+
+      {detalheModal && (
+        <EnergiaMedicaoDetalheModal
+          medicao={detalheModal}
+          sala={salaMap.get(detalheModal.sala_id)}
+          unidade={salaMap.get(detalheModal.sala_id) ? unidadeMap.get(salaMap.get(detalheModal.sala_id)!.unidade_id) : undefined}
+          onClose={() => setDetalheModal(null)}
+          onStatusChanged={updated => {
+            setMedicoes(prev => prev.map(m => m.id === updated.id ? updated : m));
+            setDetalheModal(null);
+          }}
+        />
       )}
     </EnergiaLayout>
   );

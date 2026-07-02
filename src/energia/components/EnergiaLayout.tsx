@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, DoorOpen, Zap, Users, FileText,
+  LayoutDashboard, Building2, DoorOpen, Zap, Users, FileText, Receipt,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
@@ -24,6 +24,7 @@ const ENERGIA_TABS: TabDef[] = [
   { to: '/energia/unidades',  label: 'Unidades',  icon: Building2,       adminOnly: true  },
   { to: '/energia/salas',     label: 'Salas',     icon: DoorOpen,        adminOnly: false },
   { to: '/energia/medicoes',  label: 'Medições',  icon: Zap,             adminOnly: false },
+  { to: '/energia/faturas',   label: 'Faturas',   icon: Receipt,         adminOnly: false },
   { to: '/energia/relatorios',label: 'Relatórios',icon: FileText,        adminOnly: false },
   { to: '/energia/usuarios',  label: 'Usuários',  icon: Users,           adminOnly: true  },
 ];
