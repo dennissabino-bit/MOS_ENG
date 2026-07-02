@@ -58,6 +58,7 @@ export function NovoContratoLocacaoModal({ sala, initial, isReajuste = false, on
   const [percentualReajuste, setPercentualReajuste] = useState(
     initial?.percentual_reajuste ? String(initial.percentual_reajuste) : ''
   );
+  const [diaVencimento, setDiaVencimento] = useState(initial?.dia_vencimento ?? 10);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -116,6 +117,7 @@ export function NovoContratoLocacaoModal({ sala, initial, isReajuste = false, on
           ativo: true,
           indice_reajuste: indiceReajuste,
           percentual_reajuste: percentualNum,
+          dia_vencimento: diaVencimento,
           contrato_origem_id: initial.id,
         });
         if (insertErr) throw insertErr;
@@ -143,6 +145,7 @@ export function NovoContratoLocacaoModal({ sala, initial, isReajuste = false, on
           ativo: true,
           indice_reajuste: indiceReajuste,
           percentual_reajuste: percentualNum,
+          dia_vencimento: diaVencimento,
           contrato_origem_id: null as string | null,
         };
 
@@ -269,6 +272,24 @@ export function NovoContratoLocacaoModal({ sala, initial, isReajuste = false, on
                 placeholder="0,00"
                 className={inputClass}
               />
+            </div>
+          </div>
+
+          {/* Dia de vencimento */}
+          <div>
+            <label className="block font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1.5">
+              DIA DE VENCIMENTO
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={1}
+                max={28}
+                value={diaVencimento}
+                onChange={e => setDiaVencimento(Math.min(28, Math.max(1, Number(e.target.value) || 1)))}
+                className={`${inputClass} w-24`}
+              />
+              <span className="font-body text-xs text-text-tertiary">de cada mês (máx. 28)</span>
             </div>
           </div>
 

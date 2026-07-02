@@ -6,6 +6,7 @@ import UnidadeDetalhe from './pages/UnidadeDetalhe';
 import Salas from './pages/Salas';
 import SalaDetalhe from './pages/SalaDetalhe';
 import Medicoes from './pages/Medicoes';
+import Alugueis from './pages/Alugueis';
 import Faturas from './pages/Faturas';
 import Usuarios from './pages/Usuarios';
 import Relatorios from './pages/Relatorios';
@@ -19,6 +20,7 @@ function EnergiaRoutes() {
       <Route path="/salas"         element={<Salas />} />
       <Route path="/salas/:id"     element={<SalaDetalhe />} />
       <Route path="/medicoes"      element={<Medicoes />} />
+      <Route path="/alugueis"      element={<Alugueis />} />
       <Route path="/faturas"       element={<Faturas />} />
       <Route path="/relatorios"    element={<Relatorios />} />
       <Route path="/usuarios"      element={<Usuarios />} />

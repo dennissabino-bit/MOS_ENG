@@ -72,6 +72,7 @@ export interface EnergiaContratoLocacao {
   indice_reajuste: IndiceReajuste;
   percentual_reajuste: number;
   contrato_origem_id: string | null;
+  dia_vencimento: number;
   created_at: string;
 }
 
@@ -129,10 +130,13 @@ export interface EnergiaMedicao {
 }
 
 export type EnergiaFaturaStatus = 'rascunho' | 'enviada' | 'visualizada' | 'paga' | 'vencida';
+export type EnergiaFaturaTipo = 'energia' | 'aluguel';
 
 export interface EnergiaFatura {
   id: string;
   unidade_id: string;
+  sala_id: string | null;
+  tipo: EnergiaFaturaTipo;
   mes: number;
   ano: number;
   status: EnergiaFaturaStatus;
@@ -193,6 +197,11 @@ export const MESES_LABEL = [
 ];
 
 export const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+export const FATURA_TIPO_LABEL: Record<EnergiaFaturaTipo, string> = {
+  energia: 'Energia',
+  aluguel: 'Aluguel',
+};
 
 export const MEDICAO_STATUS_CONFIG: Record<EnergiaMedicaoStatus, { label: string; bg: string; text: string; border: string }> = {
   a_medir:       { label: 'A Medir',        bg: 'bg-surface-2',           text: 'text-text-disabled',  border: 'border-surface-3' },

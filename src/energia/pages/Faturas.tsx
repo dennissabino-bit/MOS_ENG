@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Receipt, Plus, Search, ChevronDown, Building2, CheckCircle2,
   Clock, AlertTriangle, FileText, Trash2, Zap, Loader2,
-  ChevronRight, Square, CheckSquare, MinusSquare,
+  ChevronRight, Square, CheckSquare, MinusSquare, Home,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaFaturaModal } from '../components/NovaFaturaModal';
@@ -11,7 +11,7 @@ import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatCurrencyBR, formatMesAno, getAnoAtual } from '../utils/calculos';
 import { gerarFaturaAutomatica } from '../utils/gerarFaturaAutomatica';
-import type { EnergiaUnidade, EnergiaFatura, EnergiaFaturaStatus, EnergiaMedicao, EnergiaSala } from '../types';
+import type { EnergiaUnidade, EnergiaFatura, EnergiaFaturaStatus, EnergiaMedicao, EnergiaSala, EnergiaFaturaTipo } from '../types';
 import { FATURA_STATUS_CONFIG } from '../types';
 
 const MESES_OPTS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -33,6 +33,7 @@ export default function Faturas() {
 
   const [filterUnidadeId, setFilterUnidadeId] = useState('');
   const [filterStatus, setFilterStatus] = useState<EnergiaFaturaStatus | ''>('');
+  const [filterTipo, setFilterTipo] = useState<EnergiaFaturaTipo | ''>('');
   const [filterMes, setFilterMes] = useState<number>(0);
   const [filterAno, setFilterAno] = useState<number>(getAnoAtual());
   const [search, setSearch] = useState('');
@@ -53,7 +54,7 @@ export default function Faturas() {
   useEffect(() => { fetchData(); fetchOrphaned(); }, [isAdmin, user]);
 
   // Clear selection when filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [filterUnidadeId, filterStatus, filterMes, filterAno, search]);
+  useEffect(() => { setSelectedIds(new Set()); }, [filterUnidadeId, filterStatus, filterTipo, filterMes, filterAno, search]);
 
   async function fetchData() {
     setLoading(true);
@@ -118,6 +119,7 @@ export default function Faturas() {
     return faturas.filter(f => {
       if (filterUnidadeId && f.unidade_id !== filterUnidadeId) return false;
       if (filterStatus && f.status !== filterStatus) return false;
+      if (filterTipo && f.tipo !== filterTipo) return false;
       if (filterMes && f.mes !== filterMes) return false;
       if (filterAno && f.ano !== filterAno) return false;
       if (search) {
@@ -128,7 +130,7 @@ export default function Faturas() {
       }
       return true;
     });
-  }, [faturas, filterUnidadeId, filterStatus, filterMes, filterAno, search, unidadeMap]);
+  }, [faturas, filterUnidadeId, filterStatus, filterTipo, filterMes, filterAno, search, unidadeMap]);
 
   const kpis = useMemo(() => {
     const toReceber = faturas.filter(f => f.status === 'enviada' || f.status === 'visualizada');
@@ -332,6 +334,18 @@ export default function Faturas() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
           </div>
+          <div className="relative">
+            <select
+              value={filterTipo}
+              onChange={e => setFilterTipo(e.target.value as EnergiaFaturaTipo | '')}
+              className="appearance-none pl-3 pr-7 py-2 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700 transition-colors shadow-card cursor-pointer"
+            >
+              <option value="">Todos os Tipos</option>
+              <option value="energia">Energia</option>
+              <option value="aluguel">Aluguel</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+          </div>
           <div className="flex items-center bg-surface-0 border border-surface-3 rounded-lg shadow-card overflow-hidden">
             <select
               value={filterMes}
@@ -417,6 +431,7 @@ export default function Faturas() {
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">COMPETÊNCIA</th>
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden md:table-cell">UNIDADE</th>
                     <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">DESTINATÁRIO</th>
+                    <th className="text-left py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden xl:table-cell">TIPO</th>
                     <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">ENERGIA</th>
                     <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest hidden lg:table-cell">ALUGUEL</th>
                     <th className="text-right py-3 px-4 font-body text-xs font-bold text-text-secondary tracking-widest">TOTAL</th>
@@ -468,6 +483,19 @@ export default function Faturas() {
                         <td className="py-3 px-4">
                           <p className="font-body text-sm text-text-primary">{f.destinatario_nome || '—'}</p>
                           {f.destinatario_email && <p className="font-body text-xs text-text-tertiary truncate max-w-[160px]">{f.destinatario_email}</p>}
+                        </td>
+                        <td className="py-3 px-4 hidden xl:table-cell">
+                          {f.tipo === 'aluguel' ? (
+                            <span className="inline-flex items-center gap-1 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                              <Home className="w-2.5 h-2.5" />
+                              Aluguel
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-body text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-600 border-blue-200">
+                              <Zap className="w-2.5 h-2.5" />
+                              Energia
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-right hidden lg:table-cell">
                           <span className="font-data text-sm text-text-tertiary">{formatCurrencyBR(Number(f.valor_energia))}</span>

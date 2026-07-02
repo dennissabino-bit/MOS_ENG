@@ -53,6 +53,7 @@ export async function gerarFaturaAutomatica(
       .from('energia_faturas')
       .insert({
         unidade_id: unidadeId,
+        tipo: 'energia',
         mes,
         ano,
         status: 'rascunho',
