@@ -4,6 +4,8 @@ import { DoorOpen, Search, Building2, ChevronRight, Plus, Tag, Archive, ChevronD
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaSalaModal } from '../components/NovaSalaModal';
 import { TiposSalaModal } from '../components/TiposSalaModal';
+import { VacanciaChart } from '../components/VacanciaChart';
+import type { ContratoSlim } from '../components/VacanciaChart';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { useTiposSala } from '../hooks/useTiposSala';
 import { supabase } from '../../lib/supabase';
@@ -16,6 +18,7 @@ export default function Salas() {
   const { tipos, getLabel, refetch: refetchTipos } = useTiposSala();
   const [salas, setSalas] = useState<EnergiaSala[]>([]);
   const [unidades, setUnidades] = useState<EnergiaUnidade[]>([]);
+  const [contratos, setContratos] = useState<ContratoSlim[]>([]);
   const [lastMedicao, setLastMedicao] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -33,13 +36,15 @@ export default function Salas() {
       setLoading(true);
       let sQuery = supabase.from('energia_salas').select('*').order('nome');
       if (!isAdmin && user?.unidade_id) sQuery = sQuery.eq('unidade_id', user.unidade_id);
-      const [sRes, uRes, mRes] = await Promise.all([
+      const [sRes, uRes, mRes, cRes] = await Promise.all([
         sQuery,
         supabase.from('energia_unidades').select('*'),
         supabase.from('energia_medicoes').select('sala_id, valor_total, ano, mes').order('ano', { ascending: false }).order('mes', { ascending: false }),
+        supabase.from('energia_contratos_locacao').select('sala_id, mes_inicio, ano_inicio, mes_fim, ano_fim'),
       ]);
       setSalas((sRes.data as EnergiaSala[]) || []);
       setUnidades((uRes.data as EnergiaUnidade[]) || []);
+      setContratos((cRes.data as ContratoSlim[]) || []);
       const map = new Map<string, number>();
       for (const m of (mRes.data || []) as { sala_id: string; valor_total: number; ano: number; mes: number }[]) {
         if (!map.has(m.sala_id)) map.set(m.sala_id, m.valor_total);
@@ -130,6 +135,16 @@ export default function Salas() {
             </div>
           </div>
         </div>
+
+        {/* Vacancy chart */}
+        {!loading && salas.filter(s => !s.arquivada).length > 0 && (
+          <VacanciaChart
+            salas={salas}
+            contratos={contratos}
+            unidades={unidades}
+            isAdmin={isAdmin}
+          />
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
