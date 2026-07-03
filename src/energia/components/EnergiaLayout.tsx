@@ -23,7 +23,6 @@ interface TabDef {
 
 const ENERGIA_TABS: TabDef[] = [
   { to: '/imoveis/dashboard',      label: 'Dashboard',    icon: LayoutDashboard, adminOnly: false, telaKey: 'dashboard'  },
-  { to: '/imoveis/unidades',       label: 'Unidades',     icon: Building2,       adminOnly: true                        },
   { to: '/imoveis/salas',          label: 'Salas',        icon: DoorOpen,        adminOnly: false, telaKey: 'salas'      },
   { to: '/imoveis/medicoes',       label: 'Medições',     icon: Zap,             adminOnly: false, telaKey: 'medicoes'   },
   { to: '/imoveis/alugueis',       label: 'Aluguéis',     icon: Home,            adminOnly: false, telaKey: 'alugueis'   },

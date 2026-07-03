@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2, DoorOpen, User, FileText, Search, Plus,
   Pencil, ChevronRight, AlertTriangle, CheckCircle2,
   Clock, Archive, ChevronDown, SplitSquareVertical,
+  Phone, Mail,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovaSalaModal } from '../components/NovaSalaModal';
 import { NovoInquilinoModal } from '../components/NovoInquilinoModal';
 import { NovoContratoLocacaoModal } from '../components/NovoContratoLocacaoModal';
+import { NovaUnidadeModal } from '../components/NovaUnidadeModal';
 import { useEnergiaAuth } from '../contexts/EnergiaAuthContext';
 import { useTiposSala } from '../hooks/useTiposSala';
 import { supabase } from '../../lib/supabase';
@@ -18,7 +21,7 @@ import type {
   EnergiaContratoLocacao,
 } from '../types';
 
-type CadastroTab = 'imoveis' | 'inquilinos' | 'contratos';
+type CadastroTab = 'unidades' | 'imoveis' | 'inquilinos' | 'contratos';
 
 // ─── Contract status helpers ──────────────────────────────────────────────────
 
@@ -44,6 +47,127 @@ type ContratoRow = EnergiaContratoLocacao & {
   sala: (EnergiaSala & { unidade: EnergiaUnidade | null }) | null;
   inquilino: EnergiaInquilino | null;
 };
+
+// ─── Sub-tab: Unidades ───────────────────────────────────────────────────────
+
+function UnidadesTab({
+  unidades,
+  loading,
+  onRefresh,
+}: {
+  unidades: EnergiaUnidade[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+
+  const filtered = unidades.filter(u =>
+    !search ||
+    u.nome.toLowerCase().includes(search.toLowerCase()) ||
+    u.codigo.toLowerCase().includes(search.toLowerCase()) ||
+    (u.cidade ?? '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display font-extrabold text-2xl text-text-primary tracking-tight">UNIDADES</h2>
+          <p className="font-body text-sm text-text-tertiary mt-0.5">
+            {unidades.length} unidade{unidades.length !== 1 ? 's' : ''} cadastrada{unidades.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 bg-mos-700 text-white font-body font-semibold text-sm px-4 py-2.5 rounded-xl shadow-modal transition-transform duration-[120ms] hover:scale-[1.03] active:scale-[0.95]"
+        >
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Nova Unidade
+        </button>
+      </div>
+
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary" />
+        <input
+          type="text"
+          placeholder="Buscar unidade, código, cidade..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-mos-700/20 shadow-card"
+        />
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-40 rounded-xl" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20">
+          <Building2 className="w-10 h-10 text-text-disabled mx-auto mb-3" />
+          <p className="font-body text-sm text-text-tertiary">
+            {unidades.length === 0 ? 'Nenhuma unidade cadastrada' : 'Nenhuma unidade encontrada'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filtered.map(u => (
+            <div
+              key={u.id}
+              onClick={() => navigate(`/imoveis/unidades/${u.id}`)}
+              className="card p-5 hover:shadow-card-hover transition-all duration-200 cursor-pointer group"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-surface-1 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5 text-text-secondary" />
+                  </div>
+                  <div>
+                    <p className="font-body font-semibold text-sm text-text-primary">{u.nome}</p>
+                    <p className="font-data text-xs text-mos-700 font-medium">{u.codigo}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-text-disabled group-hover:text-text-secondary transition-colors mt-0.5" />
+              </div>
+
+              {(u.cidade || u.endereco) && (
+                <p className="font-body text-xs text-text-tertiary mb-3 line-clamp-1">
+                  {u.cidade && u.estado ? `${u.cidade} — ${u.estado}` : u.endereco}
+                </p>
+              )}
+
+              <div className="pt-3 border-t border-surface-2">
+                <p className="font-body text-xs text-text-secondary font-semibold mb-1.5">
+                  {u.gerente_nome || 'Sem gerente'}
+                </p>
+                <div className="space-y-0.5">
+                  {u.gerente_email && (
+                    <span className="flex items-center gap-1.5 font-body text-[11px] text-text-tertiary">
+                      <Mail className="w-3 h-3 flex-shrink-0" />{u.gerente_email}
+                    </span>
+                  )}
+                  {u.gerente_telefone && (
+                    <span className="flex items-center gap-1.5 font-body text-[11px] text-text-tertiary">
+                      <Phone className="w-3 h-3 flex-shrink-0" />{u.gerente_telefone}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <NovaUnidadeModal
+          onClose={() => setShowModal(false)}
+          onSaved={() => { setShowModal(false); onRefresh(); }}
+        />
+      )}
+    </div>
+  );
+}
 
 // ─── Sub-tab: Imóveis ─────────────────────────────────────────────────────────
 
@@ -611,7 +735,7 @@ function ContratosTab({
 
 export default function Cadastro() {
   const { user, isAdmin } = useEnergiaAuth();
-  const [tab, setTab] = useState<CadastroTab>('imoveis');
+  const [tab, setTab] = useState<CadastroTab>('unidades');
   const [salas, setSalas] = useState<EnergiaSala[]>([]);
   const [unidades, setUnidades] = useState<EnergiaUnidade[]>([]);
   const [inquilinos, setInquilinos] = useState<EnergiaInquilino[]>([]);
@@ -642,11 +766,12 @@ export default function Cadastro() {
 
   useEffect(() => { fetchData(); }, [isAdmin, user]);
 
-  const TABS: { key: CadastroTab; label: string; icon: React.ElementType; count?: number }[] = [
-    { key: 'imoveis',    label: 'Imóveis',   icon: DoorOpen,   count: salas.filter(s => !s.arquivada).length },
-    { key: 'inquilinos', label: 'Inquilinos', icon: User,       count: inquilinos.length },
-    { key: 'contratos',  label: 'Contratos',  icon: FileText,   count: contratos.filter(c => c.ativo).length },
-  ];
+  const TABS: { key: CadastroTab; label: string; icon: React.ElementType; count?: number; adminOnly?: boolean }[] = [
+    { key: 'unidades',   label: 'Unidades',   icon: Building2,  count: unidades.length,                         adminOnly: true },
+    { key: 'imoveis',    label: 'Imóveis',    icon: DoorOpen,   count: salas.filter(s => !s.arquivada).length              },
+    { key: 'inquilinos', label: 'Inquilinos', icon: User,       count: inquilinos.length                                   },
+    { key: 'contratos',  label: 'Contratos',  icon: FileText,   count: contratos.filter(c => c.ativo).length               },
+  ].filter(t => !t.adminOnly || isAdmin);
 
   return (
     <EnergiaLayout title="Cadastro" subtitle="Imóveis, inquilinos e contratos">
@@ -661,22 +786,47 @@ export default function Cadastro() {
         </div>
 
         {/* Flow indicator */}
-        <div className="flex items-center gap-2 text-sm font-body text-text-tertiary">
-          <span className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">1</span>
-            Imóvel
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
-          <span className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">2</span>
-            Inquilino
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
-          <span className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">3</span>
-            Contrato
-          </span>
-        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2 text-sm font-body text-text-tertiary">
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">1</span>
+              Unidade
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">2</span>
+              Imóvel
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">3</span>
+              Inquilino
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">4</span>
+              Contrato
+            </span>
+          </div>
+        )}
+        {!isAdmin && (
+          <div className="flex items-center gap-2 text-sm font-body text-text-tertiary">
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">1</span>
+              Imóvel
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">2</span>
+              Inquilino
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-text-disabled" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-mos-700 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">3</span>
+              Contrato
+            </span>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center gap-1 bg-surface-1 rounded-xl p-1 border border-surface-2 w-fit flex-wrap">
@@ -708,6 +858,13 @@ export default function Cadastro() {
         </div>
 
         {/* Tab content */}
+        {tab === 'unidades' && (
+          <UnidadesTab
+            unidades={unidades}
+            loading={loading}
+            onRefresh={fetchData}
+          />
+        )}
         {tab === 'imoveis' && (
           <ImoveisTab
             salas={salas}
