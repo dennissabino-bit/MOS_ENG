@@ -4,7 +4,7 @@ import {
   Users, Search, Plus, Pencil, Trash2, KeyRound, Building2,
   ShieldCheck, Shield, Check, X as XIcon, AlertTriangle,
   LayoutDashboard, DoorOpen, Zap, Home, Receipt, FileText,
-  ChevronDown, Loader2, Archive, ArchiveRestore, ChevronRight,
+  ChevronDown, Loader2, Archive, ArchiveRestore, ChevronRight, ClipboardList,
 } from 'lucide-react';
 import { EnergiaLayout } from '../components/EnergiaLayout';
 import { NovoUsuarioModal } from '../components/NovoUsuarioModal';
@@ -25,6 +25,7 @@ export const TELAS_DISPONIVEIS = [
   { key: 'alugueis',   label: 'Aluguéis',   icon: Home,            desc: 'Faturas de locação' },
   { key: 'faturas',    label: 'Faturas',    icon: Receipt,         desc: 'Faturas de energia' },
   { key: 'relatorios', label: 'Relatórios', icon: FileText,        desc: 'Exportação de dados' },
+  { key: 'cadastro',   label: 'Cadastro',   icon: ClipboardList,   desc: 'Imóveis, inquilinos e contratos' },
 ] as const;
 
 export type TelaKey = typeof TELAS_DISPONIVEIS[number]['key'];

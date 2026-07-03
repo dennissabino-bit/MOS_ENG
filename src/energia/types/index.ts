@@ -51,6 +51,18 @@ export const MEDICAO_TIPO_LABEL: Record<MedicaoTipo, string> = {
   relogio_proprio: 'Relógio separado',
 };
 
+export interface EnergiaInquilino {
+  id: string;
+  nome: string;
+  cpf_cnpj: string;
+  rg: string;
+  email: string;
+  email_fatura: string;
+  telefone: string;
+  ativo: boolean;
+  created_at: string;
+}
+
 export type IndiceReajuste = 'igpm' | 'ipca' | 'inpc' | 'fixo';
 
 export const INDICE_REAJUSTE_LABEL: Record<IndiceReajuste, string> = {
@@ -73,6 +85,7 @@ export interface EnergiaContratoLocacao {
   indice_reajuste: IndiceReajuste;
   percentual_reajuste: number;
   contrato_origem_id: string | null;
+  inquilino_id: string | null;
   dia_vencimento: number;
   created_at: string;
 }

@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
-import { X, DoorOpen, Loader2, Gauge, SplitSquareVertical } from 'lucide-react';
+import { X, DoorOpen, Loader2, Gauge, SplitSquareVertical, Building2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTiposSala } from '../hooks/useTiposSala';
-import type { EnergiaSala, MedicaoTipo } from '../types';
+import type { EnergiaSala, EnergiaUnidade, MedicaoTipo } from '../types';
 
 interface Props {
-  unidadeId: string;
+  unidadeId?: string;
+  unidades?: EnergiaUnidade[];
   onClose: () => void;
   onSaved: () => void;
   initial?: EnergiaSala;
 }
 
-export function NovaSalaModal({ unidadeId, onClose, onSaved, initial }: Props) {
+export function NovaSalaModal({ unidadeId, unidades, onClose, onSaved, initial }: Props) {
   const { tipos, loading: tiposLoading } = useTiposSala();
+  const [selectedUnidadeId, setSelectedUnidadeId] = useState(
+    initial?.unidade_id ?? unidadeId ?? unidades?.[0]?.id ?? ''
+  );
   const [nome, setNome] = useState(initial?.nome ?? '');
   const [tipoSala, setTipoSala] = useState(initial?.tipo_sala ?? '');
   const [responsavel, setResponsavel] = useState(initial?.responsavel ?? '');
@@ -50,10 +54,11 @@ export function NovaSalaModal({ unidadeId, onClose, onSaved, initial }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nome.trim()) { setError('Nome é obrigatório'); return; }
+    if (!selectedUnidadeId) { setError('Selecione uma unidade'); return; }
     setSaving(true);
     setError('');
     const payload = {
-      unidade_id: unidadeId,
+      unidade_id: selectedUnidadeId,
       nome: nome.trim(),
       tipo_sala: tipoSala,
       medicao_tipo: medicaoTipo,
@@ -99,6 +104,22 @@ export function NovaSalaModal({ unidadeId, onClose, onSaved, initial }: Props) {
           {error && (
             <div className="px-3 py-2 rounded-lg bg-status-errorLight border border-status-error/20">
               <p className="font-body text-xs text-status-error">{error}</p>
+            </div>
+          )}
+
+          {unidades && !initial && (
+            <div>
+              <label className="block font-body text-xs font-semibold text-text-tertiary tracking-widest mb-1.5">UNIDADE *</label>
+              <div className="relative">
+                <select
+                  value={selectedUnidadeId}
+                  onChange={e => setSelectedUnidadeId(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-0 border border-surface-3 rounded-lg font-body text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-mos-700/20 focus:border-mos-700 transition-colors appearance-none pr-8"
+                >
+                  {unidades.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                </select>
+                <Building2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+              </div>
             </div>
           )}
 

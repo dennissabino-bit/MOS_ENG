@@ -10,6 +10,7 @@ import Alugueis from './pages/Alugueis';
 import Faturas from './pages/Faturas';
 import Relatorios from './pages/Relatorios';
 import EnergiaConfiguracoes from './pages/EnergiaConfiguracoes';
+import Cadastro from './pages/Cadastro';
 
 function EnergiaRoutes() {
   return (
@@ -23,6 +24,7 @@ function EnergiaRoutes() {
       <Route path="/alugueis"       element={<Alugueis />} />
       <Route path="/faturas"        element={<Faturas />} />
       <Route path="/relatorios"     element={<Relatorios />} />
+      <Route path="/cadastro"       element={<Cadastro />} />
       <Route path="/configuracoes"  element={<EnergiaConfiguracoes />} />
       <Route path="*"               element={<Navigate to="/imoveis/dashboard" replace />} />
     </Routes>
